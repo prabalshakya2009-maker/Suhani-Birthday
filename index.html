@@ -1,95 +1,278 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="A little birthday celebration made especially for you."
-    />
-    <title>A Little Birthday Magic</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <main class="celebration">
-      <div class="ambient ambient-one" aria-hidden="true"></div>
-      <div class="ambient ambient-two" aria-hidden="true"></div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎉 Happy Birthday To You! 🎂 A Special Celebration</title>
+    <meta name="description" content="A special interactive birthday celebration with music, candles, balloons, and personalized wishes.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Favicon Emoji -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
+</head>
+<body>
 
-      <div class="confetti" aria-hidden="true">
-        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-      </div>
+    <!-- CANVASES FOR CONFETTI & INTERACTIVE BALLOONS -->
+    <canvas id="celebrationCanvas"></canvas>
+    <canvas id="balloonCanvas" title="Click or tap any balloon to pop it!"></canvas>
 
-      <header class="topbar">
-        <a class="brand" href="#" aria-label="Birthday home">
-          <span class="brand-mark">✦</span>
-          <span>little moments</span>
-        </a>
-        <button class="music-control" id="musicToggle" type="button" aria-pressed="false">
-          <span class="music-icon" aria-hidden="true">♫</span>
-          <span id="musicLabel">Play birthday song</span>
-        </button>
-      </header>
-
-      <section class="hero" aria-labelledby="birthday-title">
-        <div class="hero-copy">
-          <p class="eyebrow"><span></span> today is all about you <span></span></p>
-          <h1 id="birthday-title">Happy Birthday,<br /><em>beautiful soul.</em></h1>
-          <p class="intro">
-            May your day be wrapped in laughter, sprinkled with surprises,
-            and filled with all the people and moments you love most.
-          </p>
-          <a class="wish-button" href="#wish">
-            Make a wish <span aria-hidden="true">↗</span>
-          </a>
+    <!-- ENTRANCE SURPRISE OVERLAY (Unlocks Web Audio Autoplay Policy) -->
+    <div class="entrance-overlay" id="entranceOverlay">
+        <div class="entrance-card">
+            <div class="gift-box-icon">🎁</div>
+            <span class="entrance-tag">Special Delivery</span>
+            <h1>Someone Sent You a Birthday Surprise!</h1>
+            <p>Put on your party hat and turn up your volume for an interactive birthday celebration filled with music, wishes, and magic.</p>
+            <button class="btn-open-surprise" id="btnOpenSurprise">
+                <span>✨</span> Open Your Surprise <span>🎉</span>
+            </button>
         </div>
+    </div>
 
-        <div class="birthday-art" aria-label="A glowing birthday cake with candles">
-          <div class="halo"></div>
-          <div class="sparkle sparkle-a">✦</div>
-          <div class="sparkle sparkle-b">✧</div>
-          <div class="sparkle sparkle-c">✦</div>
-          <div class="cake">
-            <div class="flame flame-one"><span></span></div>
-            <div class="flame flame-two"><span></span></div>
-            <div class="flame flame-three"><span></span></div>
-            <div class="candle candle-one"></div>
-            <div class="candle candle-two"></div>
-            <div class="candle candle-three"></div>
-            <div class="icing"></div>
-            <div class="cake-layer cake-top"></div>
-            <div class="cake-layer cake-bottom"></div>
-            <div class="cake-plate"></div>
-          </div>
-          <p class="art-caption">another trip around the sun</p>
+    <!-- TOP CONTROLS NAVBAR -->
+    <header class="top-nav">
+        <div class="nav-container">
+            <div class="brand-badge">
+                <span>🎂</span>
+                <span>Birthday Magic</span>
+            </div>
+
+            <div class="nav-actions">
+                <!-- Music Control Pill -->
+                <div class="music-pill">
+                    <button class="btn-music-toggle" id="btnMusicToggle" title="Play / Pause Birthday Song">
+                        <span id="musicIcon">▶️</span>
+                    </button>
+                    <div class="equalizer-bars" id="equalizerBars">
+                        <span></span><span></span><span></span><span></span>
+                    </div>
+                    <select class="music-style-select" id="musicStyleSelect" title="Select instrument style">
+                        <option value="musicbox">🔔 Music Box</option>
+                        <option value="piano">🎹 Piano</option>
+                        <option value="synth">👾 8-Bit Party</option>
+                    </select>
+                    <button class="btn-music-toggle" id="btnMute" title="Mute / Unmute" style="font-size: 1rem;">🔊</button>
+                </div>
+
+                <!-- Theme Switcher -->
+                <button class="nav-btn" id="btnThemeToggle" title="Switch Theme">
+                    <span>🎨</span> Theme
+                </button>
+
+                <!-- Customize Button -->
+                <button class="nav-btn primary" id="btnCustomize" title="Personalize this page">
+                    <span>✨</span> Customize Wish
+                </button>
+            </div>
         </div>
-      </section>
+    </header>
 
-      <section class="wish-card" id="wish" aria-labelledby="wish-title">
-        <div class="card-icon" aria-hidden="true">♡</div>
-        <div>
-          <p class="eyebrow eyebrow-dark">a note for you</p>
-          <h2 id="wish-title">Here’s to your next chapter.</h2>
-          <p>
-            Keep chasing the tiny joys, saying yes to the spontaneous plans,
-            and remembering just how loved you are. The best is still ahead.
-          </p>
-        </div>
-        <div class="signature">with love <span>♥</span></div>
-      </section>
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="main-content">
 
-      <footer>
-        <span>made with a little extra sparkle</span>
-        <span class="footer-dots" aria-hidden="true">• • •</span>
-        <span>for your special day</span>
-      </footer>
+        <!-- HERO GREETING BANNER -->
+        <section class="hero-banner">
+            <div class="sparkle-tag">
+                <span>✨</span> TODAY IS A CELEBRATION <span>✨</span>
+            </div>
+            <h1 class="celebration-title">
+                Happy Birthday, <span id="recipientName" class="recipient-highlight">Bestie</span>!
+                <span id="ageBadge" class="age-badge" style="display: none;"></span>
+            </h1>
+            <p class="hero-subtitle">
+                Wishing you a day filled with boundless laughter, unforgettable moments, and every joy your heart can hold!
+            </p>
+
+            <!-- Quick Cheer Pills -->
+            <div class="quick-cheer-pills">
+                <button class="cheer-pill" data-cheer="party">🎉 Woohoo!</button>
+                <button class="cheer-pill" data-cheer="love">💖 Big Love!</button>
+                <button class="cheer-pill" data-cheer="cake">🍰 Eat Cake!</button>
+                <button class="cheer-pill" data-cheer="cheers">🥂 Cheers To You!</button>
+                <button class="cheer-pill" data-cheer="dance">💃 Dance Time!</button>
+            </div>
+        </section>
+
+        <!-- INTERACTIVE CAKE CENTERPIECE -->
+        <section class="cake-section">
+            <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem;">🎂 The Birthday Cake</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">Click candles or tap below to make a wish!</p>
+
+            <div class="cake-stage">
+                <div class="cake-wrapper">
+                    <!-- Candles Row -->
+                    <div class="candles-row">
+                        <div class="candle" title="Click to blow out!">
+                            <div class="candle-wick"></div>
+                            <div class="candle-flame"></div>
+                            <div class="candle-smoke"></div>
+                        </div>
+                        <div class="candle" title="Click to blow out!">
+                            <div class="candle-wick"></div>
+                            <div class="candle-flame"></div>
+                            <div class="candle-smoke"></div>
+                        </div>
+                        <div class="candle" title="Click to blow out!">
+                            <div class="candle-wick"></div>
+                            <div class="candle-flame"></div>
+                            <div class="candle-smoke"></div>
+                        </div>
+                        <div class="candle" title="Click to blow out!">
+                            <div class="candle-wick"></div>
+                            <div class="candle-flame"></div>
+                            <div class="candle-smoke"></div>
+                        </div>
+                        <div class="candle" title="Click to blow out!">
+                            <div class="candle-wick"></div>
+                            <div class="candle-flame"></div>
+                            <div class="candle-smoke"></div>
+                        </div>
+                    </div>
+
+                    <!-- Top Tier -->
+                    <div class="cake-tier top">
+                        <div class="icing-drips"></div>
+                    </div>
+
+                    <!-- Middle Tier -->
+                    <div class="cake-tier middle">
+                        <div class="icing-drips"></div>
+                    </div>
+
+                    <!-- Bottom Tier -->
+                    <div class="cake-tier bottom">
+                        <div class="icing-drips"></div>
+                    </div>
+
+                    <!-- Cake Plate -->
+                    <div class="cake-plate"></div>
+                </div>
+            </div>
+
+            <!-- Cake Interaction Controls -->
+            <div class="cake-actions">
+                <button class="btn-action blow-btn" id="btnBlowCandles">
+                    <span>🕯️</span> Make a Wish & Blow Candles
+                </button>
+                <button class="btn-action" id="btnCutCake">
+                    <span>🍰</span> Cut a Slice
+                </button>
+            </div>
+
+            <!-- Status Banner -->
+            <div class="cake-feedback" id="cakeFeedback">
+                ✨ The candles are burning bright with wishes! ✨
+            </div>
+        </section>
+
+        <!-- HEARTFELT GREETING CARD & CELEBRATION PANEL -->
+        <section class="wish-card-section">
+            <!-- Left: Parchment Letter -->
+            <div class="parchment-letter">
+                <div class="letter-header">
+                    <div class="letter-to" id="letterTo">Dearest Friend,</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">From the bottom of our hearts</div>
+                </div>
+                <div class="letter-body" id="letterBody">
+                    May your special day be overflowing with pure happiness, endless laughter, and all the sweetest memories! You bring so much joy and light to everyone around you. Here's to making this year your most unforgettable chapter yet! 🌟💖
+                </div>
+                <div class="letter-footer">
+                    <div>
+                        <div class="letter-from-title">With warmest wishes</div>
+                        <div class="letter-signature" id="letterSignature">Your Best Friends</div>
+                    </div>
+                    <div style="font-size: 2.2rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));">🎈</div>
+                </div>
+            </div>
+
+            <!-- Right: Interactive Surprises Panel -->
+            <div class="side-celebration-panel">
+                <!-- Fortune Gift Box -->
+                <div class="interactive-box">
+                    <h3><span>🎁</span> Lucky Birthday Fortune</h3>
+                    <div class="surprise-gift-slot" id="surpriseGift" title="Click to unpack a birthday fortune!">
+                        🎁
+                    </div>
+                    <p class="gift-fortune-text" id="giftFortuneText">
+                        Tap the gift box above to unwrap a special fortune and birthday compliment!
+                    </p>
+                </div>
+
+                <!-- Balloon Pop Counter Mini-Game -->
+                <div class="interactive-box">
+                    <h3><span>🎈</span> Pop The Floating Balloons!</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                        Click or tap the rising balloons in the sky to pop them!
+                    </p>
+                    <div class="balloon-pop-counter">
+                        <span style="font-weight: 700; font-size: 0.9rem;">Balloons Popped:</span>
+                        <span class="counter-value" id="poppedCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
+
+    <!-- CUSTOMIZE MODAL -->
+    <div class="modal-overlay" id="customizeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✨ Personalize This Wish</h2>
+                <button class="btn-close-modal" id="btnCloseModal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label for="inputName">Birthday Person's Name</label>
+                <input type="text" id="inputName" class="form-input" placeholder="e.g. Sarah, Alex, Mom">
+            </div>
+
+            <div class="form-group">
+                <label for="inputAge">Age / Milestone (Optional)</label>
+                <input type="text" id="inputAge" class="form-input" placeholder="e.g. 21, 25, 30th">
+            </div>
+
+            <div class="form-group">
+                <label for="inputSender">Sender Name / Group</label>
+                <input type="text" id="inputSender" class="form-input" placeholder="e.g. David & The Gang">
+            </div>
+
+            <div class="form-group">
+                <label for="inputMessage">Heartfelt Wish Message</label>
+                <textarea id="inputMessage" class="form-textarea" placeholder="Write your custom birthday wish..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="selectTheme">Celebration Theme</label>
+                <select id="selectTheme" class="form-select">
+                    <option value="galaxy">🌌 Midnight Galaxy (Neon & Gold)</option>
+                    <option value="rosegold">🌸 Rose Gold & Champagne Luxe</option>
+                    <option value="carnival">🎪 Party Carnival & Confetti</option>
+                </select>
+            </div>
+
+            <div class="share-link-box">
+                <input type="text" id="shareLinkInput" class="share-link-input" readonly>
+                <button class="btn-copy" id="btnCopyLink">📋 Copy Link</button>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; text-align: center;">
+                Copy and send this unique URL to your friend so they see their personalized celebration!
+            </p>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast-msg" id="toastMsg">Notification message</div>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>Made with love & celebration magic ✨ • Happy Birthday To You!</p>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script src="audio-synth.js"></script>
     <script src="script.js"></script>
-  </body>
+</body>
 </html>
