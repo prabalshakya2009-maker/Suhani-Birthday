@@ -19,6 +19,7 @@ class BirthdayAudioEngine {
         this.tempo = 110; // BPM
         this.onPlayStateChange = null;
         this.songTimer = null;
+        this.fadeTimer = null;
         this.songDuration = 45; // 45 seconds celebration playback timer
 
         // Frequencies for musical notes (Key of C Major)
@@ -226,15 +227,23 @@ class BirthdayAudioEngine {
     playBirthdaySong() {
         this.initContext();
         if (this.masterGain && this.ctx && !this.isMuted) {
-            this.masterGain.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.02);
+            this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
         }
         if (this.isPlaying) return;
 
         this.isPlaying = true;
         if (this.onPlayStateChange) this.onPlayStateChange(true);
 
-        // Auto-stop playback timer: plays for 45 seconds as requested
+        // Auto-stop playback timer: plays for 45 seconds automatically and then stops
         this.clearSongTimer();
+
+        // Musical fade out during final 2.5 seconds (at 42.5s -> 45s) for a gentle, elegant stop
+        this.fadeTimer = setTimeout(() => {
+            if (this.isPlaying && this.masterGain && this.ctx && !this.isMuted) {
+                this.masterGain.gain.setTargetAtTime(0.0001, this.ctx.currentTime, 0.9);
+            }
+        }, (this.songDuration - 2.5) * 1000);
+
         this.songTimer = setTimeout(() => {
             if (this.isPlaying) {
                 this.pauseBirthdaySong();
@@ -296,7 +305,7 @@ class BirthdayAudioEngine {
         this.clearTimeouts();
         if (this.masterGain && this.ctx) {
             // Smooth quick fadeout on pause so ringing notes stop cleanly
-            this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.02);
+            this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
         }
         if (this.onPlayStateChange) this.onPlayStateChange(false);
     }
@@ -305,6 +314,10 @@ class BirthdayAudioEngine {
         if (this.songTimer) {
             clearTimeout(this.songTimer);
             this.songTimer = null;
+        }
+        if (this.fadeTimer) {
+            clearTimeout(this.fadeTimer);
+            this.fadeTimer = null;
         }
     }
 
