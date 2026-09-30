@@ -1841,6 +1841,11 @@ footer a {
         justify-content: center;
         padding: 0.55rem 0.4rem;
         font-size: 0.82rem;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+        position: relative;
     }
 
     .polaroid-stickers-row {

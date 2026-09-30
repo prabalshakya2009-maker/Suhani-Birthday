@@ -236,7 +236,7 @@
                 <div class="polaroid-pin">📌</div>
                 <div class="polaroid-photo" id="polaroidPhoto">
                     <span class="polaroid-emoji" id="polaroidEmoji">👑</span>
-                    <img id="polaroidImg" class="polaroid-img" style="display: none;" alt="Celebration photo" onerror="this.style.display='none'; document.getElementById('polaroidEmoji').style.display='block';">
+                    <img id="polaroidImg" class="polaroid-img" style="display: none;" alt="Celebration photo">
                     <div class="polaroid-sticker-overlay" id="polaroidStickerOverlay" title="Click to clear sticker"></div>
                 </div>
 
@@ -253,9 +253,9 @@
                 <div class="polaroid-tools">
                     <button type="button" class="polaroid-btn" id="btnChangeAvatar" title="Change Celebration Avatar">🎭 Avatar</button>
                     <button type="button" class="polaroid-btn" id="btnChangeFrame" title="Change Frame Border Style">🖼️ Frame</button>
-                    <label class="polaroid-btn upload-btn" title="Upload your photo">
+                    <label class="polaroid-btn upload-btn" for="photoUpload" title="Upload your photo">
                         📷 Photo
-                        <input type="file" id="photoUpload" accept="image/*" style="display: none;">
+                        <input type="file" id="photoUpload" accept="image/*" style="position: absolute; opacity: 0; width: 0.1px; height: 0.1px; overflow: hidden; z-index: -1; pointer-events: none;">
                     </label>
                     <button type="button" class="polaroid-btn download-btn" id="btnDownloadCard" title="Download Keepsake Card as Image">💾 Save</button>
                 </div>
@@ -347,9 +347,9 @@
                 <label for="inputPhoto">Birthday Person's Photo (Optional)</label>
                 <div class="photo-input-group">
                     <input type="text" id="inputPhoto" class="form-input" placeholder="Paste image link (https://...)" autocomplete="off">
-                    <label class="btn-modal-upload" title="Upload photo from phone or computer">
+                    <label class="btn-modal-upload" for="modalPhotoUpload" title="Upload photo from phone or computer">
                         📷 Upload
-                        <input type="file" id="modalPhotoUpload" accept="image/*" style="display: none;">
+                        <input type="file" id="modalPhotoUpload" accept="image/*" style="position: absolute; opacity: 0; width: 0.1px; height: 0.1px; overflow: hidden; z-index: -1; pointer-events: none;">
                     </label>
                 </div>
                 <p class="field-hint">Paste an image link or upload directly from your phone gallery or computer!</p>

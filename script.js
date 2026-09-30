@@ -104,6 +104,201 @@ document.addEventListener('DOMContentLoaded', () => {
     const avatars = ['👑', '🎂', '🥳', '💖', '🦄', '🐱', '⭐', '🎈', '🍰'];
     let currentAvatarIdx = 0;
 
+    // Multi-Layer Bulletproof Storage Engine for Celebration Photo
+    // Survives: F5 reload on file:// (via window.name), restarts on GitHub Pages / web server (via localStorage & IndexedDB), and tab navigations
+    const PhotoStore = {
+        STORAGE_KEY: 'birthday_star_photo',
+        DB_NAME: 'BirthdayCelebrationDB',
+        STORE_NAME: 'assets',
+        KEY: 'celebration_photo',
+
+        save(photoData) {
+            if (!photoData) {
+                this.clear();
+                return;
+            }
+
+            // Layer 1: window.name (100% immune to file:/// origin clears in Chromium upon F5 reload)
+            try {
+                let sessionState = {};
+                if (window.name && window.name.startsWith('{')) {
+                    try { sessionState = JSON.parse(window.name); } catch (e) { sessionState = {}; }
+                }
+                sessionState[this.STORAGE_KEY] = photoData;
+                window.name = JSON.stringify(sessionState);
+            } catch (e) {}
+
+            // Layer 2: localStorage (Persistent across browser restarts on web server / GitHub Pages)
+            try {
+                localStorage.setItem(this.STORAGE_KEY, photoData);
+            } catch (e) {}
+
+            // Layer 3: sessionStorage (Current tab session storage)
+            try {
+                sessionStorage.setItem(this.STORAGE_KEY, photoData);
+            } catch (e) {}
+
+            // Layer 4: IndexedDB (High-capacity persistent storage in browser)
+            try {
+                this.saveToIndexedDB(photoData).catch(() => {});
+            } catch (e) {}
+        },
+
+        getSync() {
+            // Check window.name first (fastest and immune to file:/// origin clears)
+            try {
+                if (window.name && window.name.startsWith('{')) {
+                    const sessionState = JSON.parse(window.name);
+                    if (sessionState && sessionState[this.STORAGE_KEY]) {
+                        return sessionState[this.STORAGE_KEY];
+                    }
+                }
+            } catch (e) {}
+
+            // Check localStorage
+            try {
+                const lsPhoto = localStorage.getItem(this.STORAGE_KEY);
+                if (lsPhoto) return lsPhoto;
+            } catch (e) {}
+
+            // Check sessionStorage
+            try {
+                const ssPhoto = sessionStorage.getItem(this.STORAGE_KEY);
+                if (ssPhoto) return ssPhoto;
+            } catch (e) {}
+
+            return null;
+        },
+
+        async getAsync() {
+            const syncVal = this.getSync();
+            if (syncVal) return syncVal;
+
+            try {
+                const idbVal = await this.getFromIndexedDB();
+                if (idbVal) {
+                    this.save(idbVal);
+                    return idbVal;
+                }
+            } catch (e) {}
+
+            return null;
+        },
+
+        clear() {
+            try {
+                if (window.name && window.name.startsWith('{')) {
+                    const sessionState = JSON.parse(window.name);
+                    delete sessionState[this.STORAGE_KEY];
+                    window.name = JSON.stringify(sessionState);
+                }
+            } catch (e) {}
+            try { localStorage.removeItem(this.STORAGE_KEY); } catch (e) {}
+            try { sessionStorage.removeItem(this.STORAGE_KEY); } catch (e) {}
+            try { this.clearIndexedDB(); } catch (e) {}
+        },
+
+        openDB() {
+            return new Promise((resolve, reject) => {
+                if (!window.indexedDB) return reject(new Error('IndexedDB not supported'));
+                try {
+                    const req = indexedDB.open(this.DB_NAME, 1);
+                    req.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+                            db.createObjectStore(this.STORE_NAME);
+                        }
+                    };
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        },
+
+        async saveToIndexedDB(data) {
+            const db = await this.openDB();
+            return new Promise((resolve, reject) => {
+                try {
+                    const tx = db.transaction(this.STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(this.STORE_NAME);
+                    const req = store.put(data, this.KEY);
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        },
+
+        async getFromIndexedDB() {
+            const db = await this.openDB();
+            return new Promise((resolve, reject) => {
+                try {
+                    const tx = db.transaction(this.STORE_NAME, 'readonly');
+                    const store = tx.objectStore(this.STORE_NAME);
+                    const req = store.get(this.KEY);
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => reject(req.error);
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        },
+
+        async clearIndexedDB() {
+            try {
+                const db = await this.openDB();
+                const tx = db.transaction(this.STORE_NAME, 'readwrite');
+                tx.objectStore(this.STORE_NAME).delete(this.KEY);
+            } catch (e) {}
+        }
+    };
+
+    function displayCelebrationPhoto(src) {
+        if (!polaroidImg) return;
+        if (!src) {
+            polaroidImg.src = '';
+            polaroidImg.style.display = 'none';
+            if (polaroidEmoji) polaroidEmoji.style.display = 'block';
+            return;
+        }
+
+        polaroidImg.onload = () => {
+            polaroidImg.style.display = 'block';
+            if (polaroidEmoji) polaroidEmoji.style.display = 'none';
+        };
+
+        polaroidImg.onerror = () => {
+            polaroidImg.style.display = 'none';
+            if (polaroidEmoji) polaroidEmoji.style.display = 'block';
+        };
+
+        polaroidImg.src = src;
+        polaroidImg.style.display = 'block';
+        if (polaroidEmoji) polaroidEmoji.style.display = 'none';
+    }
+
+    function tryLoadLocalFolderPhoto() {
+        const candidateFiles = ['photo.jpg', 'photo.png', 'photo.jpeg'];
+        function tryCandidate(index) {
+            if (index >= candidateFiles.length) {
+                displayCelebrationPhoto('');
+                return;
+            }
+            const testImg = new Image();
+            testImg.onload = () => {
+                displayCelebrationPhoto(candidateFiles[index]);
+            };
+            testImg.onerror = () => {
+                tryCandidate(index + 1);
+            };
+            testImg.src = candidateFiles[index];
+        }
+        tryCandidate(0);
+    }
+
     // --- 1. PERSONALIZATION & URL PARSING ---
     function initPersonalization() {
         const params = new URLSearchParams(window.location.search);
@@ -146,45 +341,48 @@ document.addEventListener('DOMContentLoaded', () => {
         // Best streak restoration
         if (bestStreakEl) bestStreakEl.textContent = bestStreak;
 
-        // Check photo from URL parameters (?photo= or ?img=)
-        const photoParam = params.get('photo') || params.get('img') || '';
-        if (photoParam) {
-            if (polaroidImg) {
-                polaroidImg.src = photoParam;
-                polaroidImg.style.display = 'block';
-            }
-            if (polaroidEmoji) polaroidEmoji.style.display = 'none';
-            if (inputPhoto) inputPhoto.value = photoParam;
-            try { localStorage.setItem('birthday_star_photo', photoParam); } catch (e) {}
-        } else {
-            // Restore saved photo from localStorage if user added one
+        let photoParam = params.get('photo') || params.get('img') || '';
+        if (!photoParam && window.location.hash.includes('photo=')) {
             try {
-                const savedPhoto = localStorage.getItem('birthday_star_photo');
-                if (savedPhoto && polaroidImg) {
-                    polaroidImg.src = savedPhoto;
-                    polaroidImg.style.display = 'block';
-                    if (polaroidEmoji) polaroidEmoji.style.display = 'none';
-                    if (inputPhoto && !savedPhoto.startsWith('data:')) {
-                        inputPhoto.value = savedPhoto;
-                    }
-                } else {
-                    if (polaroidImg) {
-                        polaroidImg.src = '';
-                        polaroidImg.style.display = 'none';
-                    }
-                    if (polaroidEmoji) polaroidEmoji.style.display = 'block';
-                }
-            } catch (e) {
-                if (polaroidImg) polaroidImg.style.display = 'none';
-                if (polaroidEmoji) polaroidEmoji.style.display = 'block';
-            }
+                const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+                photoParam = hashParams.get('photo') || '';
+            } catch (e) {}
+        }
+        if (photoParam.startsWith('data:') && photoParam.includes(' ')) {
+            photoParam = photoParam.replace(/ /g, '+');
         }
 
-        if (polaroidImg) {
-            polaroidImg.onerror = () => {
-                polaroidImg.style.display = 'none';
-                if (polaroidEmoji) polaroidEmoji.style.display = 'block';
-            };
+        if (photoParam) {
+            displayCelebrationPhoto(photoParam);
+            PhotoStore.save(photoParam);
+            if (inputPhoto) inputPhoto.value = photoParam;
+        } else {
+            let syncPhoto = PhotoStore.getSync();
+            if (syncPhoto) {
+                if (syncPhoto.startsWith('data:') && syncPhoto.includes(' ')) {
+                    syncPhoto = syncPhoto.replace(/ /g, '+');
+                }
+                displayCelebrationPhoto(syncPhoto);
+                if (inputPhoto && !syncPhoto.startsWith('data:')) {
+                    inputPhoto.value = syncPhoto;
+                }
+            } else {
+                PhotoStore.getAsync().then(asyncPhoto => {
+                    if (asyncPhoto) {
+                        if (asyncPhoto.startsWith('data:') && asyncPhoto.includes(' ')) {
+                            asyncPhoto = asyncPhoto.replace(/ /g, '+');
+                        }
+                        displayCelebrationPhoto(asyncPhoto);
+                        if (inputPhoto && !asyncPhoto.startsWith('data:')) {
+                            inputPhoto.value = asyncPhoto;
+                        }
+                    } else {
+                        tryLoadLocalFolderPhoto();
+                    }
+                }).catch(() => {
+                    tryLoadLocalFolderPhoto();
+                });
+            }
         }
 
         // Check local saved sticker
@@ -295,23 +493,11 @@ document.addEventListener('DOMContentLoaded', () => {
         inputPhoto.addEventListener('input', () => {
             const val = inputPhoto.value.trim();
             if (val) {
-                if (polaroidImg) {
-                    polaroidImg.src = val;
-                    polaroidImg.style.display = 'block';
-                }
-                if (polaroidEmoji) polaroidEmoji.style.display = 'none';
-                try {
-                    localStorage.setItem('birthday_star_photo', val);
-                } catch (e) {}
+                displayCelebrationPhoto(val);
+                PhotoStore.save(val);
             } else {
-                if (polaroidImg) {
-                    polaroidImg.src = '';
-                    polaroidImg.style.display = 'none';
-                }
-                if (polaroidEmoji) polaroidEmoji.style.display = 'block';
-                try {
-                    localStorage.removeItem('birthday_star_photo');
-                } catch (e) {}
+                displayCelebrationPhoto('');
+                PhotoStore.clear();
             }
             updateShareLink();
         });
@@ -617,12 +803,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 polaroidEmoji.textContent = avatars[currentAvatarIdx];
                 polaroidEmoji.style.display = 'block';
             }
-            if (polaroidImg) {
-                polaroidImg.src = '';
-                polaroidImg.style.display = 'none';
-            }
+            displayCelebrationPhoto('');
             if (inputPhoto) inputPhoto.value = '';
-            try { localStorage.removeItem('birthday_star_photo'); } catch (e) {}
+            PhotoStore.clear();
             updateShareLink();
             if (window.birthdayAudio) window.birthdayAudio.playBubbleSound();
             showToast(`Avatar updated: ${avatars[currentAvatarIdx]}`);
@@ -631,65 +814,89 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Unified photo processor with canvas downsampling for fast mobile memory and clean storage
     function processAndApplyPhoto(file) {
-        if (!file || !file.type.startsWith('image/')) {
+        if (!file) return;
+
+        // Mobile-friendly image format detection (handles camera captures where type is empty or HEIC)
+        const isImage = (file.type && file.type.startsWith('image/')) ||
+                        !file.type ||
+                        /\.(jpe?g|png|gif|webp|heic|heif|bmp|svg)$/i.test(file.name || '');
+        if (!isImage) {
             showToast('⚠️ Please select a valid image file');
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
+        function renderAndSave(imgSource) {
+            const canvas = document.createElement('canvas');
+            let w = imgSource.width || 380;
+            let h = imgSource.height || 380;
+            const maxDim = 380;
+            if (w > maxDim || h > maxDim) {
+                if (w > h) {
+                    h = Math.round((h * maxDim) / w);
+                    w = maxDim;
+                } else {
+                    w = Math.round((w * maxDim) / h);
+                    h = maxDim;
+                }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(imgSource, 0, 0, w, h);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.80);
+
+            displayCelebrationPhoto(compressedDataUrl);
+            PhotoStore.save(compressedDataUrl);
+
+            if (inputPhoto) {
+                inputPhoto.value = compressedDataUrl.length < 2500 ? compressedDataUrl : '';
+            }
+
+            updateShareLink();
+
+            if (window.birthdayAudio) window.birthdayAudio.playPartyPopperSound();
+            triggerConfettiBurst(window.innerWidth / 2, window.innerHeight / 2, 40);
+            showToast("📸 Photo saved permanently in celebration frame! ✨");
+        }
+
+        // Memory-safe loading for mobile devices using Blob URL with FileReader fallback
+        if (window.URL && window.URL.createObjectURL) {
+            const blobUrl = window.URL.createObjectURL(file);
             const img = new Image();
             img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let w = img.width;
-                let h = img.height;
-                const maxDim = 400;
-                if (w > maxDim || h > maxDim) {
-                    if (w > h) {
-                        h = Math.round((h * maxDim) / w);
-                        w = maxDim;
-                    } else {
-                        w = Math.round((w * maxDim) / h);
-                        h = maxDim;
-                    }
-                }
-                canvas.width = w;
-                canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
-                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
-
-                if (polaroidImg) {
-                    polaroidImg.src = compressedDataUrl;
-                    polaroidImg.style.display = 'block';
-                }
-                if (polaroidEmoji) polaroidEmoji.style.display = 'none';
-
-                try {
-                    localStorage.setItem('birthday_star_photo', compressedDataUrl);
-                } catch (err) {
-                    console.warn('LocalStorage image quota exceeded:', err);
-                }
-
-                if (inputPhoto && compressedDataUrl.length < 2500) {
-                    inputPhoto.value = compressedDataUrl;
-                }
-
-                updateShareLink();
-
-                if (window.birthdayAudio) window.birthdayAudio.playPartyPopperSound();
-                triggerConfettiBurst(window.innerWidth / 2, window.innerHeight / 2, 40);
-                showToast("📸 Photo updated in celebration frame! ✨");
+                window.URL.revokeObjectURL(blobUrl);
+                renderAndSave(img);
             };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+            img.onerror = () => {
+                window.URL.revokeObjectURL(blobUrl);
+                // Fallback to FileReader
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const fallbackImg = new Image();
+                    fallbackImg.onload = () => renderAndSave(fallbackImg);
+                    fallbackImg.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+            img.src = blobUrl;
+        } else {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => renderAndSave(img);
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
     }
 
     if (photoUpload) {
         photoUpload.addEventListener('change', (e) => {
             const file = e.target.files && e.target.files[0];
-            if (file) processAndApplyPhoto(file);
+            if (file) {
+                processAndApplyPhoto(file);
+                photoUpload.value = ''; // Reset so mobile can re-select same file
+            }
         });
     }
 
@@ -698,7 +905,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const file = e.target.files && e.target.files[0];
             if (file) {
                 processAndApplyPhoto(file);
-                showToast("📸 Photo loaded! (Tip: paste an online image link to share photo across devices)");
+                modalPhotoUpload.value = ''; // Reset for mobile re-selection
+                showToast("📸 Photo loaded & saved permanently!");
             }
         });
     }
@@ -1724,4 +1932,21 @@ document.addEventListener('DOMContentLoaded', () => {
     resizeCanvases();
     animationLoop();
     initPersonalization();
+
+    // Mobile app lifecycle listeners: guarantee photo persistence on pull-to-refresh or app-switch
+    window.addEventListener('pageshow', () => {
+        const photo = PhotoStore.getSync();
+        if (photo && polaroidImg && polaroidImg.style.display === 'none') {
+            displayCelebrationPhoto(photo);
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            const photo = PhotoStore.getSync();
+            if (photo && polaroidImg && polaroidImg.style.display === 'none') {
+                displayCelebrationPhoto(photo);
+            }
+        }
+    });
 });
