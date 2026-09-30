@@ -53,6 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputSender = document.getElementById('inputSender');
     const inputMessage = document.getElementById('inputMessage');
     const selectTheme = document.getElementById('selectTheme');
+    const inputPhoto = document.getElementById('inputPhoto');
+    const modalPhotoUpload = document.getElementById('modalPhotoUpload');
     const shareLinkInput = document.getElementById('shareLinkInput');
     const btnCopyLink = document.getElementById('btnCopyLink');
 
@@ -144,14 +146,44 @@ document.addEventListener('DOMContentLoaded', () => {
         // Best streak restoration
         if (bestStreakEl) bestStreakEl.textContent = bestStreak;
 
-        // Check local saved Polaroid photo & sticker
-        try {
-            const savedPhoto = localStorage.getItem('birthday_star_photo');
-            if (savedPhoto && polaroidImg) {
-                polaroidImg.src = savedPhoto;
+        // Check photo from URL parameters (?photo= or ?img=)
+        const photoParam = params.get('photo') || params.get('img') || '';
+        if (photoParam) {
+            if (polaroidImg) {
+                polaroidImg.src = photoParam;
                 polaroidImg.style.display = 'block';
-                if (polaroidEmoji) polaroidEmoji.style.display = 'none';
             }
+            if (polaroidEmoji) polaroidEmoji.style.display = 'none';
+            if (inputPhoto) inputPhoto.value = photoParam;
+        } else {
+            // Check local saved Polaroid photo
+            try {
+                const savedPhoto = localStorage.getItem('birthday_star_photo');
+                if (savedPhoto && polaroidImg) {
+                    polaroidImg.src = savedPhoto;
+                    polaroidImg.style.display = 'block';
+                    if (polaroidEmoji) polaroidEmoji.style.display = 'none';
+                    if (inputPhoto && !savedPhoto.startsWith('data:')) {
+                        inputPhoto.value = savedPhoto;
+                    }
+                } else {
+                    if (polaroidImg) polaroidImg.style.display = 'none';
+                    if (polaroidEmoji) polaroidEmoji.style.display = 'block';
+                }
+            } catch (e) {
+                // LocalStorage fallback
+            }
+        }
+
+        if (polaroidImg) {
+            polaroidImg.onerror = () => {
+                polaroidImg.style.display = 'none';
+                if (polaroidEmoji) polaroidEmoji.style.display = 'block';
+            };
+        }
+
+        // Check local saved sticker
+        try {
             const savedSticker = localStorage.getItem('birthday_sticker');
             if (savedSticker && polaroidStickerOverlay) {
                 currentSticker = savedSticker;
@@ -184,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const senderVal = inputSender.value.trim();
             const msgVal = inputMessage.value.trim();
             const themeVal = selectTheme.value;
+            const photoVal = inputPhoto ? inputPhoto.value.trim() : '';
 
             if (nameVal) url.searchParams.set('name', nameVal);
             if (ageVal) url.searchParams.set('age', ageVal);
@@ -191,6 +224,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (msgVal) url.searchParams.set('msg', msgVal);
             if (themeVal && themeVal !== 'galaxy') {
                 url.searchParams.set('theme', themeVal);
+            }
+            if (photoVal) {
+                // If it's a web URL or compact string, include in URL parameters
+                if (!photoVal.startsWith('data:') || photoVal.length < 2500) {
+                    url.searchParams.set('photo', photoVal);
+                }
             }
 
             shareLinkInput.value = isHttp ? url.toString() : `?${url.searchParams.toString()}`;
@@ -246,6 +285,32 @@ document.addEventListener('DOMContentLoaded', () => {
             applyTheme(selectTheme.value);
         });
     });
+
+    if (inputPhoto) {
+        inputPhoto.addEventListener('input', () => {
+            const val = inputPhoto.value.trim();
+            if (val) {
+                if (polaroidImg) {
+                    polaroidImg.src = val;
+                    polaroidImg.style.display = 'block';
+                }
+                if (polaroidEmoji) polaroidEmoji.style.display = 'none';
+                try {
+                    localStorage.setItem('birthday_star_photo', val);
+                } catch (e) {}
+            } else {
+                if (polaroidImg) {
+                    polaroidImg.src = '';
+                    polaroidImg.style.display = 'none';
+                }
+                if (polaroidEmoji) polaroidEmoji.style.display = 'block';
+                try {
+                    localStorage.removeItem('birthday_star_photo');
+                } catch (e) {}
+            }
+            updateShareLink();
+        });
+    }
 
     // Copy Link Action
     btnCopyLink.addEventListener('click', () => {
@@ -553,31 +618,77 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (photoUpload) {
-        photoUpload.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+    // Unified photo processor with canvas downsampling for fast mobile memory and clean storage
+    function processAndApplyPhoto(file) {
+        if (!file || !file.type.startsWith('image/')) {
+            showToast('⚠️ Please select a valid image file');
+            return;
+        }
 
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const imgData = event.target.result;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let w = img.width;
+                let h = img.height;
+                const maxDim = 400;
+                if (w > maxDim || h > maxDim) {
+                    if (w > h) {
+                        h = Math.round((h * maxDim) / w);
+                        w = maxDim;
+                    } else {
+                        w = Math.round((w * maxDim) / h);
+                        h = maxDim;
+                    }
+                }
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+
                 if (polaroidImg) {
-                    polaroidImg.src = imgData;
+                    polaroidImg.src = compressedDataUrl;
                     polaroidImg.style.display = 'block';
                 }
                 if (polaroidEmoji) polaroidEmoji.style.display = 'none';
 
                 try {
-                    localStorage.setItem('birthday_star_photo', imgData);
+                    localStorage.setItem('birthday_star_photo', compressedDataUrl);
                 } catch (err) {
-                    // Quota
+                    console.warn('LocalStorage image quota exceeded:', err);
                 }
+
+                if (inputPhoto && compressedDataUrl.length < 2500) {
+                    inputPhoto.value = compressedDataUrl;
+                }
+
+                updateShareLink();
 
                 if (window.birthdayAudio) window.birthdayAudio.playPartyPopperSound();
                 triggerConfettiBurst(window.innerWidth / 2, window.innerHeight / 2, 40);
-                showToast("📸 Photo updated in celebration frame!");
+                showToast("📸 Photo updated in celebration frame! ✨");
             };
-            reader.readAsDataURL(file);
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    if (photoUpload) {
+        photoUpload.addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (file) processAndApplyPhoto(file);
+        });
+    }
+
+    if (modalPhotoUpload) {
+        modalPhotoUpload.addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (file) {
+                processAndApplyPhoto(file);
+                showToast("📸 Photo loaded! (Tip: paste an online image link to share photo across devices)");
+            }
         });
     }
 
@@ -906,6 +1017,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         balloonCtx.setTransform(1, 0, 0, 1, 0, 0);
         balloonCtx.scale(dpr, dpr);
+
+        if (typeof getDesiredBalloonCount === 'function' && Array.isArray(balloons)) {
+            const targetBalloons = getDesiredBalloonCount();
+            while (balloons.length < targetBalloons) {
+                balloons.push(new Balloon());
+            }
+            while (balloons.length > targetBalloons) {
+                balloons.pop();
+            }
+        }
     }
 
     window.addEventListener('resize', resizeCanvases);
@@ -1068,7 +1189,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (this.opacity <= 0) return;
             ctx.save();
             ctx.globalAlpha = Math.max(0, this.opacity);
-            ctx.font = 'bold 1.15rem "Outfit", sans-serif';
+            const isMobile = window.innerWidth <= 640;
+            ctx.font = isMobile ? 'bold 0.88rem "Outfit", sans-serif' : 'bold 1.15rem "Outfit", sans-serif';
             ctx.fillStyle = '#fbbf24';
             ctx.shadowColor = 'rgba(0,0,0,0.6)';
             ctx.shadowBlur = 8;
@@ -1249,25 +1371,37 @@ document.addEventListener('DOMContentLoaded', () => {
         { main: '#10b981', dark: '#047857', shine: '#a7f3d0' }
     ];
 
+    function getDesiredBalloonCount() {
+        return window.innerWidth <= 640 ? 5 : (window.innerWidth <= 960 ? 8 : 12);
+    }
+
     class Balloon {
         constructor() {
             this.reset(true);
         }
 
         reset(initial = false) {
-            this.radiusX = Math.random() * 12 + 26; // Width radius
-            this.radiusY = this.radiusX * 1.25;    // Height radius
             const screenW = window.innerWidth;
             const screenH = window.innerHeight;
-            this.x = Math.random() * Math.max(100, screenW - 80) + 40;
+            const isMobile = screenW <= 640;
+
+            // Gracefully scaled: dainty & miniature on mobile so screen feels wide, open & uncluttered!
+            this.radiusX = isMobile
+                ? (Math.random() * 5 + 13) // Mobile: 13-18px radius (26-36px diameter, half of desktop!)
+                : (Math.random() * 12 + 26); // Desktop: 26-38px radius (52-76px diameter)
+            this.radiusY = this.radiusX * 1.25;
+
+            this.x = Math.random() * Math.max(60, screenW - (isMobile ? 50 : 80)) + (isMobile ? 25 : 40);
             this.y = initial
                 ? Math.random() * screenH
                 : screenH + this.radiusY + 40;
-            this.speedY = Math.random() * 0.9 + 0.8;
+            this.speedY = isMobile
+                ? (Math.random() * 0.7 + 0.6) // Gentler float speed on mobile
+                : (Math.random() * 0.9 + 0.8);
             this.colorObj = balloonPalette[Math.floor(Math.random() * balloonPalette.length)];
             this.swingOffset = Math.random() * Math.PI * 2;
             this.swingSpeed = Math.random() * 0.02 + 0.015;
-            this.stringLength = this.radiusY * 1.8;
+            this.stringLength = isMobile ? this.radiusY * 1.3 : this.radiusY * 1.8;
             // 20% of balloons are special Heart or Star balloons!
             this.type = Math.random() < 0.2 ? (Math.random() < 0.5 ? 'heart' : 'star') : 'oval';
             // 12% of balloons are Golden Jackpot Balloons!
@@ -1275,8 +1409,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         update() {
+            const isMobile = window.innerWidth <= 640;
             this.y -= this.speedY;
-            this.x += Math.sin(this.swingOffset) * 0.6;
+            this.x += Math.sin(this.swingOffset) * (isMobile ? 0.35 : 0.6);
             this.swingOffset += this.swingSpeed;
 
             // Recycle balloon if it floats off top
@@ -1287,6 +1422,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         draw(ctx) {
             ctx.save();
+            const isMobile = window.innerWidth <= 640;
+            if (isMobile) {
+                // Soft translucent floating effect on mobile so text & cards remain readable underneath
+                ctx.globalAlpha = 0.82;
+            }
 
             // Balloon Body
             if (this.type === 'heart') {
@@ -1300,8 +1440,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.bezierCurveTo(-25, -35, -50, 0, 0, 35);
                 ctx.bezierCurveTo(50, 0, 25, -35, 0, -10);
                 ctx.fillStyle = this.colorObj.main;
-                ctx.shadowColor = 'rgba(0,0,0,0.25)';
-                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                ctx.shadowBlur = isMobile ? 5 : 10;
                 ctx.fill();
                 ctx.restore();
             } else if (this.type === 'star') {
@@ -1319,8 +1459,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 ctx.closePath();
                 ctx.fillStyle = this.colorObj.main;
-                ctx.shadowColor = 'rgba(0,0,0,0.25)';
-                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                ctx.shadowBlur = isMobile ? 5 : 10;
                 ctx.fill();
                 ctx.restore();
             } else if (this.isGolden) {
@@ -1341,7 +1481,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 grad.addColorStop(1, '#78350f');
                 ctx.fillStyle = grad;
                 ctx.shadowColor = '#fbbf24';
-                ctx.shadowBlur = 18;
+                ctx.shadowBlur = isMobile ? 8 : 18;
                 ctx.fill();
 
                 // Sparkle indicator on balloon
@@ -1368,49 +1508,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 grad.addColorStop(1, this.colorObj.dark);
 
                 ctx.fillStyle = grad;
-                ctx.shadowColor = 'rgba(0,0,0,0.25)';
-                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                ctx.shadowBlur = isMobile ? 5 : 10;
                 ctx.fill();
             }
 
             // Balloon Knot
             ctx.shadowBlur = 0;
             ctx.beginPath();
-            ctx.moveTo(this.x - 4, this.y + this.radiusY);
-            ctx.lineTo(this.x + 4, this.y + this.radiusY);
-            ctx.lineTo(this.x, this.y + this.radiusY + 6);
+            const kw = isMobile ? 2.5 : 4;
+            const kh = isMobile ? 4 : 6;
+            ctx.moveTo(this.x - kw, this.y + this.radiusY);
+            ctx.lineTo(this.x + kw, this.y + this.radiusY);
+            ctx.lineTo(this.x, this.y + this.radiusY + kh);
             ctx.closePath();
             ctx.fillStyle = this.colorObj.dark;
             ctx.fill();
 
             // Balloon String
             ctx.beginPath();
-            ctx.moveTo(this.x, this.y + this.radiusY + 6);
-            const wave = Math.sin(this.swingOffset) * 12;
+            ctx.moveTo(this.x, this.y + this.radiusY + kh);
+            const wave = Math.sin(this.swingOffset) * (isMobile ? 6 : 12);
             ctx.bezierCurveTo(
                 this.x + wave,
-                this.y + this.radiusY + 25,
+                this.y + this.radiusY + (isMobile ? 14 : 25),
                 this.x - wave,
-                this.y + this.radiusY + 45,
+                this.y + this.radiusY + (isMobile ? 26 : 45),
                 this.x,
                 this.y + this.radiusY + this.stringLength
             );
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-            ctx.lineWidth = 1.2;
+            ctx.lineWidth = isMobile ? 0.9 : 1.2;
             ctx.stroke();
 
             ctx.restore();
         }
 
         isHit(px, py) {
+            const isMobile = window.innerWidth <= 640;
             const dx = (px - this.x) / this.radiusX;
             const dy = (py - this.y) / this.radiusY;
-            return (dx * dx + dy * dy) <= 1.25;
+            const hitThreshold = isMobile ? 1.8 : 1.25;
+            return (dx * dx + dy * dy) <= hitThreshold;
         }
     }
 
-    // Initialize 12 floating balloons
-    for (let i = 0; i < 12; i++) {
+    // Initialize floating balloons dynamically scaled for mobile vs desktop
+    const desiredBalloons = getDesiredBalloonCount();
+    for (let i = 0; i < desiredBalloons; i++) {
         balloons.push(new Balloon());
     }
 

@@ -16,9 +16,10 @@ class BirthdayAudioEngine {
         this.masterGain = null;
         this.currentTimeout = null;
         this.noteTimeouts = [];
-        this.loop = true;
         this.tempo = 110; // BPM
         this.onPlayStateChange = null;
+        this.songTimer = null;
+        this.songDuration = 45; // 45 seconds celebration playback timer
 
         // Frequencies for musical notes (Key of C Major)
         this.NOTE_FREQS = {
@@ -232,6 +233,14 @@ class BirthdayAudioEngine {
         this.isPlaying = true;
         if (this.onPlayStateChange) this.onPlayStateChange(true);
 
+        // Auto-stop playback timer: plays for 45 seconds as requested
+        this.clearSongTimer();
+        this.songTimer = setTimeout(() => {
+            if (this.isPlaying) {
+                this.pauseBirthdaySong();
+            }
+        }, this.songDuration * 1000);
+
         this.scheduleMelodyLoop();
     }
 
@@ -275,7 +284,7 @@ class BirthdayAudioEngine {
         // Loop pause after full phrase
         const totalSongTime = cumulativeTime + 2.0; // 2 seconds celebratory pause before replay
         this.currentTimeout = setTimeout(() => {
-            if (this.isPlaying && this.loop) {
+            if (this.isPlaying) {
                 this.scheduleMelodyLoop();
             }
         }, totalSongTime * 1000);
@@ -283,12 +292,20 @@ class BirthdayAudioEngine {
 
     pauseBirthdaySong() {
         this.isPlaying = false;
+        this.clearSongTimer();
         this.clearTimeouts();
         if (this.masterGain && this.ctx) {
             // Smooth quick fadeout on pause so ringing notes stop cleanly
             this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.02);
         }
         if (this.onPlayStateChange) this.onPlayStateChange(false);
+    }
+
+    clearSongTimer() {
+        if (this.songTimer) {
+            clearTimeout(this.songTimer);
+            this.songTimer = null;
+        }
     }
 
     togglePlay() {

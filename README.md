@@ -6,6 +6,7 @@ An interactive, responsive birthday celebration web application built with HTML5
 
 - 🎵 **"Happy Birthday To You" Background Music**:
   - Procedurally synthesized polyphonic melody with harmonics, bassline, and chords using the **Web Audio API**.
+  - Built-in **45-Second Celebration Timer**: Plays the festive melody for 45 seconds with smooth fade-out and auto-reset.
   - 100% offline-ready with zero external audio file dependencies.
   - Multi-instrument styles: **🔔 Chime Music Box**, **🎹 Warm Piano**, **🎷 Sunset Lofi**, and **👾 8-Bit Party Synth**.
   - Floating player with animated equalizer bars, play/pause toggle, volume slider, and mute button.
@@ -24,7 +25,7 @@ An interactive, responsive birthday celebration web application built with HTML5
   - **Combo Streak Multiplier**: Pop balloons in quick succession for escalating combo multipliers (`x2`, `x3`, `x5`, `x10!`) with streak counter and milestone rewards!
   - **Golden Jackpot Balloons**: Shimmering gold balloons with radiant auras granting `+50 pts` and grand fireworks!
 - 📸 **Keepsake Polaroid Photo Frame & Card Creator**:
-  - Upload a personal photo or cycle celebratory avatars (👑, 🎂, 🥳, 💖, 🦄, 🐱, ⭐, 🎈, 🍰).
+  - **No GitHub Editing Needed**: Anyone creating custom wishes can paste an image link or upload directly from their phone/PC via the website interface!
   - Add festive stickers (🥳 Party Hat, 👑 Crown, 🕶️ Sunglasses, 🎀 Bow, ⭐ Star).
   - 4 Designer Frame Styles: Classic Polaroid, Golden Luxe Foil, Cyberpunk Neon, and Romantic Blossom.
   - **💾 Download Keepsake Card**: Instant high-res PNG export generated via HTML5 Canvas that the recipient can save to their camera roll or Instagram stories!
@@ -39,8 +40,8 @@ An interactive, responsive birthday celebration web application built with HTML5
   - **Rose Gold & Champagne** (Luxe romantic festive vibes)
   - **Party Carnival** (Vibrant electric sky and confetti)
 - 🔗 **Instant Shareable Link Generator**:
-  - Customize the recipient's name, age, message, and theme live via the *"Customize Wish"* modal.
-  - Generates a shareable URL (e.g. `?name=Sophia&age=21&from=Alex&theme=rosegold`) that can be copied with one click to send via WhatsApp, Messenger, or Email.
+  - Customize the recipient's name, age, message, theme, and photo live via the *"Customize Wish"* modal.
+  - Generates a shareable URL (e.g. `?name=Sophia&age=21&from=Alex&theme=rosegold&photo=https://...`) that can be copied with one click to send via WhatsApp, Messenger, or Email.
 
 ---
 
@@ -75,10 +76,11 @@ You can customize the celebration directly via URL parameters:
 | `from` | Sender's name / sign-off | `?from=Mom%20%26%20Dad` |
 | `msg` | Heartfelt wish message | `?msg=Wishing+you+the+happiest+birthday!` |
 | `theme` | Theme (`galaxy`, `rosegold`, `carnival`) | `?theme=rosegold` |
+| `photo` | Photo URL (direct image link) | `?photo=https://images.unsplash.com/...` |
 
 **Example full link**:
 ```
-index.html?name=Alex&age=21&from=David&theme=galaxy
+index.html?name=Alex&age=21&from=David&theme=galaxy&photo=https://images.unsplash.com/photo-1534528741775-53994a69daeb
 ```
 
 ---

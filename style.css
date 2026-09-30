@@ -942,7 +942,7 @@ body.sparkler-active {
     grid-template-columns: 1.2fr 0.95fr 0.85fr;
     gap: 1.5rem;
     margin-bottom: 3rem;
-    align-items: stretch;
+    align-items: start;
 }
 
 @media (max-width: 960px) {
@@ -960,13 +960,14 @@ body.sparkler-active {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
     position: relative;
     transform: rotate(-1.5deg);
     transition: transform 0.4s ease, box-shadow 0.4s ease;
-    max-width: 280px;
+    max-width: 320px;
     width: 100%;
     margin: 0 auto;
+    align-self: start;
+    gap: 0.75rem;
 }
 
 .polaroid-frame:hover {
@@ -986,7 +987,7 @@ body.sparkler-active {
 
 .polaroid-photo {
     width: 100%;
-    height: 180px;
+    height: 250px;
     background: linear-gradient(135deg, #fce7f3 0%, #ede9fe 100%);
     border-radius: 6px;
     display: flex;
@@ -1013,6 +1014,7 @@ body.sparkler-active {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center 20%;
 }
 
 .polaroid-caption {
@@ -1020,16 +1022,17 @@ body.sparkler-active {
     font-size: 1.6rem;
     font-weight: 700;
     color: #1e1b4b;
-    margin-top: 0.8rem;
+    margin-top: 0.15rem;
     text-align: center;
 }
 
 .polaroid-tools {
     display: flex;
-    gap: 0.5rem;
-    margin-top: 0.6rem;
+    gap: 0.45rem;
+    margin-top: 0.15rem;
     width: 100%;
     justify-content: center;
+    flex-wrap: wrap;
 }
 
 .polaroid-btn {
@@ -1485,6 +1488,46 @@ body.room-dimmed .cake-section {
     resize: vertical;
 }
 
+.photo-input-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.photo-input-group .form-input {
+    flex: 1;
+}
+
+.btn-modal-upload {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--card-border);
+    color: var(--text-main);
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.btn-modal-upload:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.field-hint {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 0.35rem;
+    line-height: 1.4;
+}
+
 .share-link-box {
     background: rgba(0, 0, 0, 0.4);
     border: 1px dashed var(--card-border);
@@ -1701,6 +1744,11 @@ footer a {
         padding: 0 0.75rem;
     }
 
+    /* Mobile Balloon Canvas: sits behind cards so content remains spacious, open and unobstructed */
+    #balloonCanvas {
+        z-index: 6;
+    }
+
     .hero-banner {
         margin-bottom: 2rem;
     }
@@ -1775,6 +1823,10 @@ footer a {
         max-width: 280px;
         width: 100%;
         padding: 1rem 1rem 1.25rem;
+    }
+
+    .polaroid-photo {
+        height: 180px;
     }
 
     .polaroid-tools {
