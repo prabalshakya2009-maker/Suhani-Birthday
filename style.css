@@ -23,6 +23,7 @@
     --cake-layer3: #be123c;
     --font-heading: 'Outfit', 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-handwriting: 'Caveat', 'Dancing Script', cursive;
+    --brand-gradient: linear-gradient(135deg, #fff, var(--accent-gold));
 }
 
 /* Theme: Rose Gold Luxe */
@@ -37,12 +38,13 @@
     --primary: #e11d48;
     --primary-glow: rgba(225, 29, 72, 0.3);
     --secondary: #be123c;
-    --accent-gold: #d97706;
-    --accent-gold-glow: rgba(217, 119, 6, 0.4);
+    --accent-gold: #b45309;
+    --accent-gold-glow: rgba(180, 83, 9, 0.3);
     --frosting-color: #ffffff;
     --cake-base: #fb7185;
     --cake-layer2: #e11d48;
     --cake-layer3: #9f1239;
+    --brand-gradient: linear-gradient(135deg, #881337, #e11d48);
 }
 
 /* Theme: Party Carnival */
@@ -63,6 +65,7 @@
     --cake-base: #38bdf8;
     --cake-layer2: #0284c7;
     --cake-layer3: #0369a1;
+    --brand-gradient: linear-gradient(135deg, #fff, #38bdf8);
 }
 
 /* ----------------- BASE & RESET ----------------- */
@@ -75,15 +78,32 @@
 
 html, body {
     width: 100%;
+    max-width: 100vw;
     min-height: 100vh;
+    min-height: 100dvh;
     font-family: var(--font-heading);
     background: var(--bg-base);
     background-image: var(--bg-gradient);
     background-attachment: fixed;
     color: var(--text-main);
-    overflow-x: hidden;
+    overflow-x: hidden !important;
     position: relative;
     transition: background 0.5s ease, color 0.5s ease;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    touch-action: manipulation;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
+body.sparkler-active {
+    touch-action: none !important;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 /* Starfield / Sparkle Background Canvas */
@@ -98,8 +118,9 @@ html, body {
 }
 
 #balloonCanvas {
-    pointer-events: auto; /* Allow popping balloons */
-    z-index: 6;
+    /* Floats with depth in front of cards; clicks handled on window to not block buttons */
+    pointer-events: none;
+    z-index: 12;
 }
 
 /* ----------------- ENTRANCE SURPRISE OVERLAY ----------------- */
@@ -240,6 +261,12 @@ html, body {
     flex-wrap: wrap;
 }
 
+.nav-top-row {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
 .brand-badge {
     display: flex;
     align-items: center;
@@ -247,7 +274,7 @@ html, body {
     font-weight: 800;
     font-size: 1.1rem;
     letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #fff, var(--accent-gold));
+    background: var(--brand-gradient, linear-gradient(135deg, #fff, var(--accent-gold)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -328,6 +355,48 @@ html, body {
 .music-style-select option {
     background: #0f172a;
     color: #fff;
+}
+
+/* Sleek Volume Slider */
+.volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 65px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.volume-slider:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent-gold);
+    cursor: pointer;
+    box-shadow: 0 0 8px var(--accent-gold-glow);
+    transition: transform 0.15s;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent-gold);
+    border: none;
+    cursor: pointer;
 }
 
 /* Nav Action Buttons */
@@ -580,6 +649,9 @@ html, body {
 .candles-row {
     position: absolute;
     top: 30px;
+    left: 0;
+    right: 0;
+    width: 100%;
     display: flex;
     justify-content: center;
     gap: 16px;
@@ -600,6 +672,21 @@ html, body {
     position: relative;
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    outline: none;
+}
+
+/* Touch-friendly hit target (minimum 40px hit area on mobile screens) */
+.candle::before {
+    content: '';
+    position: absolute;
+    inset: -12px -16px;
+    cursor: pointer;
+}
+
+.candle:focus-visible {
+    outline: 2px solid var(--accent-gold);
+    outline-offset: 4px;
+    border-radius: 4px;
 }
 
 .candle-wick {
@@ -637,6 +724,7 @@ html, body {
 .candle.blown .candle-flame {
     opacity: 0;
     transform: translateX(-50%) scale(0);
+    animation: none; /* Stops continuous flicker fighting the blown state */
     pointer-events: none;
 }
 
@@ -661,6 +749,94 @@ html, body {
     0% { opacity: 0.8; transform: translate(-50%, 0) scale(1); }
     50% { opacity: 0.5; transform: translate(-30%, -20px) scale(2.5); }
     100% { opacity: 0; transform: translate(-60%, -45px) scale(4); }
+}
+
+/* Top Tier Berry Garnishes */
+.tier-berries {
+    position: absolute;
+    top: -12px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    font-size: 1rem;
+    pointer-events: none;
+    z-index: 8;
+}
+
+/* Cut Slice Display & Animation */
+.cut-slice-display {
+    position: absolute;
+    bottom: 5px;
+    right: -15px;
+    opacity: 0;
+    transform: scale(0.3) translateX(-30px) rotate(-15deg);
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+    z-index: 20;
+}
+
+.cake-section.is-cut .cut-slice-display {
+    opacity: 1;
+    transform: scale(1) translateX(0) rotate(6deg);
+}
+
+.cut-slice-plate {
+    background: radial-gradient(circle, #f8fafc 40%, #cbd5e1 100%);
+    width: 95px;
+    height: 38px;
+    border-radius: 50%;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.slice-triangle {
+    position: absolute;
+    top: -24px;
+    left: 18px;
+    width: 60px;
+    height: 44px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.slice-berry {
+    position: absolute;
+    top: -14px;
+    left: 18px;
+    font-size: 1.1rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    z-index: 5;
+    animation: berryBob 2s infinite ease-in-out alternate;
+}
+
+@keyframes berryBob {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-3px); }
+}
+
+.slice-layer.frosting {
+    height: 10px;
+    background: var(--frosting-color);
+}
+.slice-layer.sponge {
+    height: 12px;
+    background: linear-gradient(135deg, var(--cake-base), var(--cake-layer2));
+}
+.slice-layer.cream {
+    height: 6px;
+    background: #ffffff;
+}
+.slice-layer.sponge-base {
+    height: 16px;
+    background: linear-gradient(135deg, var(--cake-layer2), var(--cake-layer3));
 }
 
 /* CAKE CONTROLS & INTERACTION */
@@ -706,6 +882,51 @@ html, body {
     box-shadow: 0 12px 30px rgba(245, 158, 11, 0.5);
 }
 
+/* Mic Blow Button */
+.btn-action.mic-btn {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #34d399;
+}
+
+.btn-action.mic-btn:hover {
+    background: rgba(16, 185, 129, 0.25);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+}
+
+.btn-action.mic-btn.listening {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border-color: #34d399;
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.7);
+    animation: micPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes micPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
+    50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(16, 185, 129, 0.9); }
+}
+
+/* Animated Golden Cake Knife */
+.cake-knife {
+    position: absolute;
+    top: -50px;
+    right: 35px;
+    font-size: 2.8rem;
+    opacity: 0;
+    pointer-events: none;
+    transform: rotate(35deg) scale(0.6);
+    transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+    z-index: 25;
+}
+
+.cake-stage.is-cutting .cake-knife {
+    opacity: 1;
+    top: 65px;
+    right: 85px;
+    transform: rotate(-15deg) scale(1.2);
+}
+
 .cake-feedback {
     margin-top: 1.25rem;
     font-size: 1.15rem;
@@ -715,18 +936,324 @@ html, body {
     animation: fadeIn 0.4s ease;
 }
 
-/* ----------------- GREETING CARD / HEARTFELT LETTER ----------------- */
+/* ----------------- GREETING CARD & POLAROID SECTION ----------------- */
 .wish-card-section {
     display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: 2rem;
+    grid-template-columns: 1.2fr 0.95fr 0.85fr;
+    gap: 1.5rem;
     margin-bottom: 3rem;
+    align-items: stretch;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
     .wish-card-section {
         grid-template-columns: 1fr;
     }
+}
+
+/* Polaroid Keepsake Frame */
+.polaroid-frame {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.2rem 1.2rem 1.4rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(251, 191, 36, 0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    transform: rotate(-1.5deg);
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+    max-width: 280px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.polaroid-frame:hover {
+    transform: rotate(0deg) scale(1.03) translateY(-4px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(236, 72, 153, 0.3);
+}
+
+.polaroid-pin {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    z-index: 10;
+}
+
+.polaroid-photo {
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(135deg, #fce7f3 0%, #ede9fe 100%);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+    cursor: pointer;
+}
+
+.polaroid-emoji {
+    font-size: 4.8rem;
+    animation: avatarBounce 3s infinite ease-in-out;
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.2));
+}
+
+@keyframes avatarBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-8px) scale(1.08); }
+}
+
+.polaroid-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.polaroid-caption {
+    font-family: var(--font-handwriting);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1e1b4b;
+    margin-top: 0.8rem;
+    text-align: center;
+}
+
+.polaroid-tools {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+    width: 100%;
+    justify-content: center;
+}
+
+.polaroid-btn {
+    background: rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    color: #475569;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.polaroid-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: translateY(-1px);
+}
+
+.polaroid-btn.download-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    font-weight: 800;
+}
+
+.polaroid-btn.download-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+}
+
+/* Polaroid Frame Variations */
+.polaroid-frame.frame-gold {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 40%, #fde68a 100%);
+    border: 2px solid #f59e0b;
+    box-shadow: 0 20px 45px rgba(245, 158, 11, 0.35), 0 0 25px rgba(251, 191, 36, 0.4);
+}
+
+.polaroid-frame.frame-gold .polaroid-caption {
+    color: #92400e;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+.polaroid-frame.frame-neon {
+    background: #090d16;
+    border: 2px solid #38bdf8;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.5), inset 0 0 15px rgba(236, 72, 153, 0.3);
+}
+
+.polaroid-frame.frame-neon .polaroid-caption {
+    color: #38bdf8;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+}
+
+.polaroid-frame.frame-blossom {
+    background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 50%, #fecdd3 100%);
+    border: 2px solid #fb7185;
+    box-shadow: 0 20px 45px rgba(244, 63, 94, 0.25);
+}
+
+.polaroid-frame.frame-blossom .polaroid-caption {
+    color: #9f1239;
+}
+
+/* Sticker Overlay On Photo */
+.polaroid-sticker-overlay {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 2.8rem;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+    cursor: pointer;
+    z-index: 15;
+    display: none;
+    animation: stickerPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    user-select: none;
+}
+
+.polaroid-sticker-overlay.active {
+    display: block;
+}
+
+@keyframes stickerPop {
+    0% { transform: scale(0) rotate(-25deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* Stickers Picker Row */
+.polaroid-stickers-row {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+    width: 100%;
+}
+
+.sticker-btn {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.sticker-btn:hover {
+    transform: scale(1.25) translateY(-2px);
+    background: rgba(236, 72, 153, 0.18);
+    border-color: var(--primary);
+}
+
+/* Sparkler Wand Active State */
+.nav-btn#btnSparklerToggle.active {
+    background: linear-gradient(135deg, #f59e0b, #eab308);
+    color: #1e1b4b;
+    font-weight: 800;
+    box-shadow: 0 0 25px rgba(251, 191, 36, 0.7);
+    animation: sparklerPulse 1.2s infinite alternate;
+}
+
+@keyframes sparklerPulse {
+    0% { box-shadow: 0 0 10px rgba(251, 191, 36, 0.4); }
+    100% { box-shadow: 0 0 25px rgba(251, 191, 36, 0.9); }
+}
+
+body.sparkler-active {
+    cursor: crosshair;
+}
+
+/* Room Dimming when candles are blown out */
+body.room-dimmed {
+    background: #02040a !important;
+}
+
+body.room-dimmed .main-content > section:not(.cake-section) {
+    opacity: 0.15;
+    filter: blur(2px);
+    transition: opacity 0.8s ease, filter 0.8s ease;
+}
+
+body.room-dimmed .cake-section {
+    box-shadow: 0 0 80px rgba(251, 191, 36, 0.35);
+    border-color: rgba(251, 191, 36, 0.5);
+}
+
+/* Balloon Pop Combo & Mini-game Additions */
+.balloon-combo-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #ef4444, #f59e0b);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    margin-top: 0.5rem;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.balloon-combo-badge.show {
+    opacity: 1;
+    transform: scale(1);
+    animation: comboWiggle 0.6s infinite alternate;
+}
+
+@keyframes comboWiggle {
+    0% { transform: scale(1) rotate(-3deg); }
+    100% { transform: scale(1.08) rotate(3deg); }
+}
+
+.balloon-substats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.golden-hint {
+    color: var(--accent-gold);
+    font-weight: 600;
+}
+
+/* Quick Wish Preset Pills in Modal */
+.wish-presets-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+    margin-bottom: 0.5rem;
+}
+
+.preset-pill {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--card-border);
+    color: var(--text-main);
+    font-family: var(--font-heading);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.preset-pill:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    transform: translateY(-1px);
 }
 
 .parchment-letter {
@@ -998,10 +1525,38 @@ html, body {
     opacity: 0.9;
 }
 
+.share-note {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.6rem;
+    text-align: center;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+}
+
+.section-subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.letter-pretitle {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.letter-balloon-emoji {
+    font-size: 2.2rem;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
 /* Toast notification */
 .toast-msg {
     position: fixed;
-    bottom: 2rem;
+    bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem));
     left: 50%;
     transform: translateX(-50%) translateY(100px);
     background: #10b981;
@@ -1013,6 +1568,9 @@ html, body {
     z-index: 3000;
     opacity: 0;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 90vw;
+    text-align: center;
+    box-sizing: border-box;
 }
 
 .toast-msg.show {
@@ -1036,27 +1594,292 @@ footer a {
 }
 
 /* ----------------- RESPONSIVE ADJUSTMENTS ----------------- */
+
+/* Tablets and small laptops */
+@media (max-width: 960px) {
+    .wish-card-section {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    .parchment-letter, .polaroid-frame, .side-celebration-panel {
+        max-width: 480px;
+        width: 100%;
+        margin: 0 auto;
+    }
+}
+
+/* Mobile Devices (<= 640px) */
 @media (max-width: 640px) {
+    .top-nav {
+        top: max(0.4rem, env(safe-area-inset-top, 0px));
+        padding: 0 0.5rem;
+        width: 100%;
+    }
+
     .nav-container {
-        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        padding: 0.5rem 0.65rem;
+        gap: 0.45rem;
+        flex-direction: column;
+        overflow: visible;
     }
+
+    .nav-top-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
     .brand-badge {
-        font-size: 1rem;
+        font-size: 0.98rem;
+        gap: 0.4rem;
+        flex-shrink: 0;
     }
+
     .music-pill {
-        padding: 0.25rem 0.6rem;
+        padding: 0.2rem 0.45rem;
+        gap: 0.35rem;
+        flex-shrink: 0;
     }
+
+    /* Hide desktop-only volume slider on phones to prioritize space and thumb controls */
+    .volume-slider {
+        display: none !important;
+    }
+
+    /* 16px font prevents iOS Safari auto-zoom; scaled visually */
+    .music-style-select {
+        font-size: 16px !important;
+        transform: scale(0.82);
+        transform-origin: center right;
+        max-width: 92px;
+        padding: 0.2rem 0.3rem;
+        margin: -4px 0;
+    }
+
+    .equalizer-bars {
+        width: 18px;
+        height: 16px;
+        gap: 2px;
+    }
+
+    .equalizer-bars span {
+        width: 3px;
+    }
+
+    /* 4-Column Balanced Grid for Action Buttons */
+    .nav-actions {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.35rem;
+        width: 100%;
+    }
+
+    .nav-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.48rem 0.2rem;
+        font-size: 0.76rem;
+        border-radius: 12px;
+        white-space: nowrap;
+        gap: 0.25rem;
+    }
+
+    /* Forms: 16px font prevents iOS Safari auto-zoom on field focus */
+    .form-input,
+    .form-textarea,
+    .form-select,
+    .share-link-input {
+        font-size: 16px !important;
+    }
+
+    /* Main Content */
+    .main-content {
+        margin: 1rem auto 3rem;
+        padding: 0 0.75rem;
+    }
+
+    .hero-banner {
+        margin-bottom: 2rem;
+    }
+
+    .celebration-title {
+        font-size: clamp(1.85rem, 7vw, 2.6rem);
+        line-height: 1.2;
+        word-break: break-word;
+    }
+
+    .hero-subtitle {
+        font-size: 0.95rem;
+        margin: 0.5rem auto 1.25rem;
+    }
+
+    .quick-cheer-pills {
+        gap: 0.4rem;
+    }
+
+    .cheer-pill {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    /* Cake Section */
     .cake-section {
-        padding: 1.75rem 1rem;
+        padding: 1.75rem 0.75rem;
+        border-radius: 24px;
+        overflow: hidden;
     }
+
     .cake-stage {
         width: 270px;
         height: 250px;
+        margin: 1.25rem auto 1.5rem;
     }
+
     .cake-tier.bottom { width: 220px; height: 70px; }
     .cake-tier.middle { width: 170px; height: 60px; }
     .cake-tier.top { width: 110px; height: 50px; }
     .cake-plate { width: 260px; }
     .candles-row { gap: 10px; }
-    .entrance-card { padding: 2rem 1.5rem; }
+
+    .cut-slice-display {
+        right: 0px;
+        bottom: 0px;
+        transform: scale(0.8);
+    }
+
+    .cake-section.is-cut .cut-slice-display {
+        transform: scale(0.88) rotate(4deg);
+    }
+
+    .cake-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        gap: 0.6rem;
+    }
+
+    .btn-action {
+        width: 100%;
+        max-width: 290px;
+        justify-content: center;
+        padding: 0.75rem 1.25rem;
+        font-size: 0.92rem;
+    }
+
+    /* Polaroid Card & Tools */
+    .polaroid-frame {
+        max-width: 280px;
+        width: 100%;
+        padding: 1rem 1rem 1.25rem;
+    }
+
+    .polaroid-tools {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.45rem;
+        width: 100%;
+    }
+
+    .polaroid-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.55rem 0.4rem;
+        font-size: 0.82rem;
+    }
+
+    .polaroid-stickers-row {
+        gap: 0.35rem;
+    }
+
+    .sticker-btn {
+        min-width: 38px;
+        min-height: 38px;
+        font-size: 1.35rem;
+    }
+
+    /* Modal */
+    .modal-overlay {
+        padding: 0.75rem;
+    }
+
+    .modal-content {
+        padding: 1.5rem 1.15rem;
+        border-radius: 22px;
+        max-height: 85vh;
+        max-height: 85dvh;
+    }
+
+    .wish-presets-pills {
+        gap: 0.35rem;
+    }
+
+    .preset-pill {
+        font-size: 0.78rem;
+        padding: 0.35rem 0.65rem;
+    }
+
+    /* Cards */
+    .entrance-card { padding: 2rem 1.25rem; border-radius: 22px; }
+    .parchment-letter { padding: 1.75rem 1.25rem; border-radius: 22px; }
+    .interactive-box { padding: 1.25rem; border-radius: 20px; }
+}
+
+/* Small / Narrow Mobile Devices (<= 380px: e.g. iPhone SE, Fold) */
+@media (max-width: 380px) {
+    .top-nav {
+        padding: 0 0.35rem;
+    }
+
+    .nav-container {
+        padding: 0.45rem 0.5rem;
+    }
+
+    .brand-badge {
+        font-size: 0.88rem;
+    }
+
+    .nav-btn {
+        font-size: 0.72rem;
+        padding: 0.42rem 0.1rem;
+        gap: 0.2rem;
+    }
+
+    .cake-stage {
+        width: 235px;
+        height: 225px;
+    }
+
+    .cake-tier.bottom { width: 190px; height: 65px; }
+    .cake-tier.middle { width: 145px; height: 55px; }
+    .cake-tier.top { width: 95px; height: 45px; }
+    .cake-plate { width: 225px; }
+    .candles-row { gap: 8px; }
+    .candle { width: 8px; height: 38px; }
+    .cake-knife { font-size: 2.1rem; }
+
+    .cut-slice-display {
+        right: -5px;
+        bottom: -5px;
+        transform: scale(0.7);
+    }
+
+    .cake-section.is-cut .cut-slice-display {
+        transform: scale(0.78) rotate(4deg);
+    }
+
+    .share-link-box {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .btn-copy {
+        width: 100%;
+        text-align: center;
+        padding: 0.6rem;
+    }
 }

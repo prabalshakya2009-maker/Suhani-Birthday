@@ -67,16 +67,34 @@ class BirthdayAudioEngine {
     }
 
     // Initialize Web Audio Context (must be triggered by user interaction)
-    initContext() {
+    async initContext() {
         if (!this.ctx) {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            this.ctx = new AudioContext();
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return;
+            this.ctx = new AudioContextClass();
             this.masterGain = this.ctx.createGain();
             this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
             this.masterGain.connect(this.ctx.destination);
+
+            // Setup passive mobile unlock listener so audio resumes on user touch gestures
+            if (typeof window !== 'undefined' && !this._mobileUnlockBound) {
+                this._mobileUnlockBound = true;
+                const unlockHandler = () => {
+                    if (this.ctx && this.ctx.state === 'suspended') {
+                        this.ctx.resume().catch(() => {});
+                    }
+                };
+                ['touchstart', 'touchend', 'click', 'pointerdown'].forEach(evt => {
+                    window.addEventListener(evt, unlockHandler, { passive: true });
+                });
+            }
         }
-        if (this.ctx.state === 'suspended') {
-            this.ctx.resume();
+        if (this.ctx && this.ctx.state === 'suspended') {
+            try {
+                await this.ctx.resume();
+            } catch (err) {
+                console.warn('AudioContext resume deferred:', err);
+            }
         }
     }
 
@@ -126,11 +144,12 @@ class BirthdayAudioEngine {
                 oscHarmonic.frequency.setValueAtTime(freq * 2, startTime);
                 
                 harmGain.gain.setValueAtTime(0.22 * volumeScale, startTime);
-                harmGain.gain.exponentialRampToValueAtTime(0.0001, endTime * 0.85);
+                // Ramp duration relative to startTime (fixed bug where endTime * 0.85 was in the past)
+                harmGain.gain.exponentialRampToValueAtTime(0.0001, startTime + durationSec * 0.85);
                 oscHarmonic.connect(harmGain);
                 harmGain.connect(this.masterGain);
                 oscHarmonic.start(startTime);
-                oscHarmonic.stop(endTime);
+                oscHarmonic.stop(endTime + 0.2);
             }
 
             // Quick pluck attack & gentle ring decay
@@ -154,20 +173,43 @@ class BirthdayAudioEngine {
             oscHarmonic.connect(harmGain);
             harmGain.connect(this.masterGain);
             oscHarmonic.start(startTime);
-            oscHarmonic.stop(endTime);
+            oscHarmonic.stop(endTime + 0.1);
 
             const baseVol = (isBass ? 0.35 : 0.5) * volumeScale;
             noteGain.gain.setValueAtTime(0.001, startTime);
             noteGain.gain.linearRampToValueAtTime(baseVol, startTime + 0.02);
             noteGain.gain.exponentialRampToValueAtTime(0.0001, endTime);
 
+        } else if (this.currentStyle === 'lofi') {
+            // Warm Lofi / Sunset Chill: Soft filtered triangle wave with gentle warmth
+            osc.type = isBass ? 'sine' : 'triangle';
+            osc.frequency.setValueAtTime(freq, startTime);
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(isBass ? 450 : 1200, startTime);
+
+            const baseVol = (isBass ? 0.38 : 0.42) * volumeScale;
+            noteGain.gain.setValueAtTime(0.001, startTime);
+            noteGain.gain.linearRampToValueAtTime(baseVol, startTime + 0.035);
+            noteGain.gain.exponentialRampToValueAtTime(0.0001, endTime + 0.25);
+
+            osc.connect(filter);
+            filter.connect(noteGain);
+            noteGain.connect(this.masterGain);
+
+            osc.start(startTime);
+            osc.stop(endTime + 0.3);
+            return;
+
         } else {
-            // Retro 8-Bit Party Synth: Square wave with vibrato
+            // Retro 8-Bit Party Synth: Square wave with micro-ramp attack to prevent speaker click
             osc.type = isBass ? 'triangle' : 'square';
             osc.frequency.setValueAtTime(freq, startTime);
 
             const baseVol = (isBass ? 0.2 : 0.25) * volumeScale;
-            noteGain.gain.setValueAtTime(baseVol, startTime);
+            noteGain.gain.setValueAtTime(0.001, startTime);
+            noteGain.gain.linearRampToValueAtTime(baseVol, startTime + 0.008);
             noteGain.gain.setValueAtTime(baseVol * 0.7, startTime + durationSec * 0.8);
             noteGain.gain.linearRampToValueAtTime(0.0001, endTime);
         }
@@ -182,6 +224,9 @@ class BirthdayAudioEngine {
     // Start playing the Happy Birthday melody in loop
     playBirthdaySong() {
         this.initContext();
+        if (this.masterGain && this.ctx && !this.isMuted) {
+            this.masterGain.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.02);
+        }
         if (this.isPlaying) return;
 
         this.isPlaying = true;
@@ -239,6 +284,10 @@ class BirthdayAudioEngine {
     pauseBirthdaySong() {
         this.isPlaying = false;
         this.clearTimeouts();
+        if (this.masterGain && this.ctx) {
+            // Smooth quick fadeout on pause so ringing notes stop cleanly
+            this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.02);
+        }
         if (this.onPlayStateChange) this.onPlayStateChange(false);
     }
 
@@ -387,6 +436,166 @@ class BirthdayAudioEngine {
         setTimeout(() => {
             this.playCelebrationFanfare();
         }, 120);
+    }
+
+    // 5. Firework Rocket Launch & Explosion Sound FX
+    playFireworkSound() {
+        this.initContext();
+        if (!this.ctx) return;
+
+        const t = this.ctx.currentTime;
+        // Launch whistle
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, t);
+        osc.frequency.exponentialRampToValueAtTime(750, t + 0.3);
+
+        gain.gain.setValueAtTime(0.01, t);
+        gain.gain.linearRampToValueAtTime(0.18, t + 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(t);
+        osc.stop(t + 0.32);
+
+        // Burst & sparkle
+        setTimeout(() => {
+            if (!this.ctx) return;
+            const tb = this.ctx.currentTime;
+            const boomOsc = this.ctx.createOscillator();
+            const boomGain = this.ctx.createGain();
+            boomOsc.type = 'triangle';
+            boomOsc.frequency.setValueAtTime(130, tb);
+            boomOsc.frequency.exponentialRampToValueAtTime(35, tb + 0.28);
+
+            boomGain.gain.setValueAtTime(0.65, tb);
+            boomGain.gain.exponentialRampToValueAtTime(0.001, tb + 0.3);
+
+            boomOsc.connect(boomGain);
+            boomGain.connect(this.masterGain);
+            boomOsc.start(tb);
+            boomOsc.stop(tb + 0.32);
+        }, 300);
+    }
+
+    // 6. Cake Slice Sound FX (Crisp whoosh + dessert plate ding)
+    playSliceSound() {
+        this.initContext();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(460, t);
+        osc.frequency.exponentialRampToValueAtTime(140, t + 0.12);
+        gain.gain.setValueAtTime(0.35, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(t);
+        osc.stop(t + 0.13);
+
+        setTimeout(() => {
+            if (!this.ctx) return;
+            const tp = this.ctx.currentTime;
+            const chime = this.ctx.createOscillator();
+            const cGain = this.ctx.createGain();
+            chime.type = 'sine';
+            chime.frequency.setValueAtTime(1760, tp);
+            cGain.gain.setValueAtTime(0.2, tp);
+            cGain.gain.exponentialRampToValueAtTime(0.0001, tp + 0.6);
+            chime.connect(cGain);
+            cGain.connect(this.masterGain);
+            chime.start(tp);
+            chime.stop(tp + 0.65);
+        }, 80);
+    }
+
+    // 7. Mystical Gift Box Chime (Arpeggiated magic)
+    playGiftSound() {
+        this.initContext();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
+        notes.forEach((freq, i) => {
+            const tn = t + i * 0.055;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, tn);
+            gain.gain.setValueAtTime(0.001, tn);
+            gain.gain.linearRampToValueAtTime(0.25, tn + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.0001, tn + 0.5);
+            osc.connect(gain);
+            gain.connect(this.masterGain);
+            osc.start(tn);
+            osc.stop(tn + 0.55);
+        });
+    }
+
+    // 8. Balloon Combo Pitch FX
+    playComboSound(level = 1) {
+        this.initContext();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const baseFreq = Math.min(1300, 440 + level * 80);
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(baseFreq, t);
+        osc.frequency.linearRampToValueAtTime(baseFreq * 1.5, t + 0.12);
+        gain.gain.setValueAtTime(0.35, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(t);
+        osc.stop(t + 0.18);
+    }
+
+    // 9. Sparkler Sizzle / Crackle Sound FX
+    playSparklerSound() {
+        this.initContext();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const bufferSize = Math.floor(this.ctx.sampleRate * 0.05);
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * 0.25;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(3200, t);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.12, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+        noise.start(t);
+    }
+
+    // 10. Crisp Bubble / Waterdrop Pop for Buttons & Stickers
+    playBubbleSound() {
+        this.initContext();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, t);
+        osc.frequency.exponentialRampToValueAtTime(1400, t + 0.05);
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(t);
+        osc.stop(t + 0.07);
     }
 }
 
