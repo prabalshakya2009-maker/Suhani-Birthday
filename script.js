@@ -155,17 +155,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (polaroidEmoji) polaroidEmoji.style.display = 'none';
             if (inputPhoto) inputPhoto.value = photoParam;
+            try { localStorage.setItem('birthday_star_photo', photoParam); } catch (e) {}
         } else {
-            // Clean slate: no photo pre-loaded! Remove any legacy cached test photos
+            // Restore saved photo from localStorage if user added one
             try {
-                localStorage.removeItem('birthday_star_photo');
-            } catch (e) {}
-            if (polaroidImg) {
-                polaroidImg.src = '';
-                polaroidImg.style.display = 'none';
+                const savedPhoto = localStorage.getItem('birthday_star_photo');
+                if (savedPhoto && polaroidImg) {
+                    polaroidImg.src = savedPhoto;
+                    polaroidImg.style.display = 'block';
+                    if (polaroidEmoji) polaroidEmoji.style.display = 'none';
+                    if (inputPhoto && !savedPhoto.startsWith('data:')) {
+                        inputPhoto.value = savedPhoto;
+                    }
+                } else {
+                    if (polaroidImg) {
+                        polaroidImg.src = '';
+                        polaroidImg.style.display = 'none';
+                    }
+                    if (polaroidEmoji) polaroidEmoji.style.display = 'block';
+                }
+            } catch (e) {
+                if (polaroidImg) polaroidImg.style.display = 'none';
+                if (polaroidEmoji) polaroidEmoji.style.display = 'block';
             }
-            if (polaroidEmoji) polaroidEmoji.style.display = 'block';
-            if (inputPhoto) inputPhoto.value = '';
         }
 
         if (polaroidImg) {
@@ -605,7 +617,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 polaroidEmoji.textContent = avatars[currentAvatarIdx];
                 polaroidEmoji.style.display = 'block';
             }
-            if (polaroidImg) polaroidImg.style.display = 'none';
+            if (polaroidImg) {
+                polaroidImg.src = '';
+                polaroidImg.style.display = 'none';
+            }
+            if (inputPhoto) inputPhoto.value = '';
+            try { localStorage.removeItem('birthday_star_photo'); } catch (e) {}
+            updateShareLink();
             if (window.birthdayAudio) window.birthdayAudio.playBubbleSound();
             showToast(`Avatar updated: ${avatars[currentAvatarIdx]}`);
         });
