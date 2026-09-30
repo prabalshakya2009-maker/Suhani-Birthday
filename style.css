@@ -118,9 +118,9 @@ body.sparkler-active {
 }
 
 #balloonCanvas {
-    /* Floats with depth in front of cards; clicks handled on window to not block buttons */
+    /* Atmospheric floating layer behind content; never covers photos, faces, or text */
     pointer-events: none;
-    z-index: 12;
+    z-index: 6;
 }
 
 /* ----------------- ENTRANCE SURPRISE OVERLAY ----------------- */

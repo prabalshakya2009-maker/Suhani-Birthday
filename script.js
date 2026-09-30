@@ -156,23 +156,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (polaroidEmoji) polaroidEmoji.style.display = 'none';
             if (inputPhoto) inputPhoto.value = photoParam;
         } else {
-            // Check local saved Polaroid photo
+            // Clean slate: no photo pre-loaded! Remove any legacy cached test photos
             try {
-                const savedPhoto = localStorage.getItem('birthday_star_photo');
-                if (savedPhoto && polaroidImg) {
-                    polaroidImg.src = savedPhoto;
-                    polaroidImg.style.display = 'block';
-                    if (polaroidEmoji) polaroidEmoji.style.display = 'none';
-                    if (inputPhoto && !savedPhoto.startsWith('data:')) {
-                        inputPhoto.value = savedPhoto;
-                    }
-                } else {
-                    if (polaroidImg) polaroidImg.style.display = 'none';
-                    if (polaroidEmoji) polaroidEmoji.style.display = 'block';
-                }
-            } catch (e) {
-                // LocalStorage fallback
+                localStorage.removeItem('birthday_star_photo');
+            } catch (e) {}
+            if (polaroidImg) {
+                polaroidImg.src = '';
+                polaroidImg.style.display = 'none';
             }
+            if (polaroidEmoji) polaroidEmoji.style.display = 'block';
+            if (inputPhoto) inputPhoto.value = '';
         }
 
         if (polaroidImg) {
