@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎉 Happy Birthday To You! 🎂 A Special Celebration</title>
+    <meta name="description" content="A special interactive birthday celebration with music, candles, balloons, and personalized wishes.">
+    <meta name="theme-color" content="#ec4899">
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="🎉 A Special Birthday Celebration Just For You! 🎂">
+    <meta property="og:description" content="Open your interactive birthday celebration featuring music, candles, balloons, and personal wishes!">
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="🎉 A Special Birthday Celebration Just For You! 🎂">
+    <meta name="twitter:description" content="Open your interactive birthday celebration featuring music, candles, balloons, and personal wishes!">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Favicon Emoji -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
+</head>
+<body>
+
+    <!-- CANVASES FOR CONFETTI & INTERACTIVE BALLOONS -->
+    <canvas id="celebrationCanvas"></canvas>
+    <canvas id="balloonCanvas" title="Click or tap any balloon to pop it!"></canvas>
+
+    <!-- ENTRANCE SURPRISE OVERLAY (Unlocks Web Audio Autoplay Policy) -->
+    <div class="entrance-overlay" id="entranceOverlay">
+        <div class="entrance-card">
+            <div class="gift-box-icon">🎁</div>
+            <span class="entrance-tag">Special Delivery</span>
+            <h1>Someone Sent You a Birthday Surprise!</h1>
+            <p>Put on your party hat and turn up your volume for an interactive birthday celebration filled with music, wishes, and magic.</p>
+            <button class="btn-open-surprise" id="btnOpenSurprise">
+                <span>✨</span> Open Your Surprise <span>🎉</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- TOP CONTROLS NAVBAR -->
+    <header class="top-nav">
+        <div class="nav-container">
+            <div class="brand-badge">
+                <span>🎂</span>
+                <span>Birthday Magic</span>
+            </div>
+
+            <div class="nav-actions">
+                <!-- Music Control Pill -->
+                <div class="music-pill">
+                    <button class="btn-music-toggle" id="btnMusicToggle" title="Play / Pause Birthday Song">
+                        <span id="musicIcon">▶️</span>
+                    </button>
+                    <div class="equalizer-bars" id="equalizerBars">
+                        <span></span><span></span><span></span><span></span>
+                    </div>
+                    <select class="music-style-select" id="musicStyleSelect" title="Select instrument style">
+                        <option value="musicbox">🔔 Music Box</option>
+                        <option value="piano">🎹 Piano</option>
+                        <option value="lofi">🎷 Sunset Lofi</option>
+                        <option value="synth">👾 8-Bit Party</option>
+                    </select>
+                    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.05" value="0.65" title="Adjust Volume" aria-label="Music volume slider">
+                    <button class="btn-music-toggle" id="btnMute" title="Mute / Unmute" style="font-size: 1rem;">🔊</button>
+                </div>
+
+                <!-- Sparkler Wand Toggle -->
+                <button type="button" class="nav-btn" id="btnSparklerToggle" title="Toggle Sparkler Wand: click and drag across screen to draw glowing golden sparks!">
+                    <span>✨</span> Sparkler
+                </button>
+
+                <!-- Confetti Cannon Blast -->
+                <button type="button" class="nav-btn" id="btnBlastConfetti" title="Fire Confetti Cannon!">
+                    <span>🎉</span> Cannon
+                </button>
+
+                <!-- Theme Switcher -->
+                <button type="button" class="nav-btn" id="btnThemeToggle" title="Switch Theme">
+                    <span>🎨</span> Theme
+                </button>
+
+                <!-- Customize Button -->
+                <button type="button" class="nav-btn primary" id="btnCustomize" title="Personalize this page">
+                    <span>✨</span> Customize Wish
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="main-content">
+
+        <!-- HERO GREETING BANNER -->
+        <section class="hero-banner">
+            <div class="sparkle-tag">
+                <span>✨</span> TODAY IS A CELEBRATION <span>✨</span>
+            </div>
+            <h1 class="celebration-title">
+                Happy Birthday, <span id="recipientName" class="recipient-highlight">Bestie</span>!
+                <span id="ageBadge" class="age-badge" style="display: none;"></span>
+            </h1>
+            <p class="hero-subtitle">
+                Wishing you a day filled with boundless laughter, unforgettable moments, and every joy your heart can hold!
+            </p>
+
+            <!-- Quick Cheer Pills -->
+            <div class="quick-cheer-pills">
+                <button type="button" class="cheer-pill" data-cheer="party">🎉 Woohoo!</button>
+                <button type="button" class="cheer-pill" data-cheer="love">💖 Big Love!</button>
+                <button type="button" class="cheer-pill" data-cheer="cake">🍰 Eat Cake!</button>
+                <button type="button" class="cheer-pill" data-cheer="cheers">🥂 Cheers To You!</button>
+                <button type="button" class="cheer-pill" data-cheer="dance">💃 Dance Time!</button>
+            </div>
+        </section>
+
+        <!-- INTERACTIVE CAKE CENTERPIECE -->
+        <section class="cake-section" id="cakeSection">
+            <h2 class="section-title">🎂 The Birthday Cake</h2>
+            <p class="section-subtitle">Click or tap candles to blow them out, or make a wish below!</p>
+
+            <div class="cake-stage">
+                <div class="cake-wrapper" id="cakeWrapper">
+                    <!-- Candles Row -->
+                    <div class="candles-row">
+                        <div class="candle" tabindex="0" role="button" aria-label="First birthday candle (click or press Enter to blow out)" title="Click or tap to blow out!">
+                            <div class="candle-wick"></div>
+                            <div class="candle-flame"></div>
+                            <div class="candle-smoke"></div>
+                        </div>
+                        <div class="candle" tabindex="0" role="button" aria-label="Second birthday candle (click or press Enter to blow out)" title="Click or tap to blow out!">
+                            <div class="candle-wick"></div>
+                            <div class="candle-flame"></div>
+                            <div class="candle-smoke"></div>
+                        </div>
+                        <div class="candle" tabindex="0" role="button" aria-label="Middle birthday candle (click or press Enter to blow out)" title="Click or tap to blow out!">
+                            <div class="candle-wick"></div>
+                            <div class="candle-flame"></div>
+                            <div class="candle-smoke"></div>
+                        </div>
+                        <div class="candle" tabindex="0" role="button" aria-label="Fourth birthday candle (click or press Enter to blow out)" title="Click or tap to blow out!">
+                            <div class="candle-wick"></div>
+                            <div class="candle-flame"></div>
+                            <div class="candle-smoke"></div>
+                        </div>
+                        <div class="candle" tabindex="0" role="button" aria-label="Fifth birthday candle (click or press Enter to blow out)" title="Click or tap to blow out!">
+                            <div class="candle-wick"></div>
+                            <div class="candle-flame"></div>
+                            <div class="candle-smoke"></div>
+                        </div>
+                    </div>
+
+                    <!-- Top Tier -->
+                    <div class="cake-tier top">
+                        <div class="icing-drips"></div>
+                        <div class="tier-berries">
+                            <span>🍓</span><span>🫐</span><span>🍓</span>
+                        </div>
+                    </div>
+
+                    <!-- Middle Tier -->
+                    <div class="cake-tier middle">
+                        <div class="icing-drips"></div>
+                    </div>
+
+                    <!-- Bottom Tier -->
+                    <div class="cake-tier bottom">
+                        <div class="icing-drips"></div>
+                    </div>
+
+                    <!-- Cake Plate -->
+                    <div class="cake-plate"></div>
+
+                    <!-- Animated Served Cake Slice (Reveals on Cut Slice) -->
+                    <div class="cut-slice-display" id="cutSliceDisplay">
+                        <div class="cut-slice-plate">
+                            <div class="slice-triangle">
+                                <span class="slice-berry">🍓</span>
+                                <div class="slice-layer frosting"></div>
+                                <div class="slice-layer sponge"></div>
+                                <div class="slice-layer cream"></div>
+                                <div class="slice-layer sponge-base"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Cake Knife Animation Element -->
+                    <div class="cake-knife" id="cakeKnife">🔪</div>
+                </div>
+            </div>
+
+            <!-- Cake Interaction Controls -->
+            <div class="cake-actions">
+                <button type="button" class="btn-action blow-btn" id="btnBlowCandles">
+                    <span>🕯️</span> Make a Wish & Blow Candles
+                </button>
+                <button type="button" class="btn-action mic-btn" id="btnMicBlow" title="Enable mic to blow out candles in real life!">
+                    <span>🎤</span> Blow With Mic
+                </button>
+                <button type="button" class="btn-action" id="btnCutCake">
+                    <span>🍰</span> Cut a Slice
+                </button>
+            </div>
+
+            <!-- Status Banner -->
+            <div class="cake-feedback" id="cakeFeedback" aria-live="polite">
+                ✨ The candles are burning bright with wishes! ✨
+            </div>
+        </section>
+
+        <!-- HEARTFELT GREETING CARD & CELEBRATION PANEL -->
+        <section class="wish-card-section">
+            <!-- Left: Parchment Letter -->
+            <div class="parchment-letter">
+                <div class="letter-header">
+                    <div class="letter-to" id="letterTo">Dearest Friend,</div>
+                    <div class="letter-pretitle">From the bottom of my heart</div>
+                </div>
+                <div class="letter-body" id="letterBody">
+                    May your special day be overflowing with pure happiness, endless laughter, and all the sweetest memories! You bring so much joy and light to everyone around you. Here's to making this year your most unforgettable chapter yet! 🌟💖
+                </div>
+                <div class="letter-footer">
+                    <div>
+                        <div class="letter-from-title">Warm wishes</div>
+                        <div class="letter-signature" id="letterSignature">Your Best Friends</div>
+                    </div>
+                    <div class="letter-balloon-emoji">🎈</div>
+                </div>
+            </div>
+
+            <!-- Center: Keepsake Polaroid Photo Frame -->
+            <div class="polaroid-frame" id="polaroidCard">
+                <div class="polaroid-pin">📌</div>
+                <div class="polaroid-photo" id="polaroidPhoto">
+                    <span class="polaroid-emoji" id="polaroidEmoji">👑</span>
+                    <img id="polaroidImg" class="polaroid-img" style="display: none;" alt="Celebration photo">
+                    <div class="polaroid-sticker-overlay" id="polaroidStickerOverlay" title="Click to clear sticker"></div>
+                </div>
+
+                <!-- Celebratory Stickers Picker -->
+                <div class="polaroid-stickers-row" id="polaroidStickersRow" title="Add celebratory stickers to photo!">
+                    <button type="button" class="sticker-btn" data-sticker="🥳" title="Party Hat">🥳</button>
+                    <button type="button" class="sticker-btn" data-sticker="👑" title="Royal Crown">👑</button>
+                    <button type="button" class="sticker-btn" data-sticker="🕶️" title="Cool Sunglasses">🕶️</button>
+                    <button type="button" class="sticker-btn" data-sticker="🎀" title="Sparkle Bow">🎀</button>
+                    <button type="button" class="sticker-btn" data-sticker="⭐" title="Golden Star">⭐</button>
+                </div>
+
+                <div class="polaroid-caption" id="polaroidCaption">✨ Star of the Day ✨</div>
+                <div class="polaroid-tools">
+                    <button type="button" class="polaroid-btn" id="btnChangeAvatar" title="Change Celebration Avatar">🎭 Avatar</button>
+                    <button type="button" class="polaroid-btn" id="btnChangeFrame" title="Change Frame Border Style">🖼️ Frame</button>
+                    <label class="polaroid-btn upload-btn" title="Upload your photo">
+                        📷 Photo
+                        <input type="file" id="photoUpload" accept="image/*" style="display: none;">
+                    </label>
+                    <button type="button" class="polaroid-btn download-btn" id="btnDownloadCard" title="Download Keepsake Card as Image">💾 Save</button>
+                </div>
+            </div>
+
+            <!-- Right: Interactive Surprises Panel -->
+            <div class="side-celebration-panel">
+                <!-- Fortune Gift Box -->
+                <div class="interactive-box">
+                    <h3><span>🎁</span> Lucky Birthday Fortune</h3>
+                    <div class="surprise-gift-slot" id="surpriseGift" tabindex="0" role="button" aria-label="Open surprise birthday fortune gift" title="Click or tap to unwrap a birthday fortune!">
+                        🎁
+                    </div>
+                    <p class="gift-fortune-text" id="giftFortuneText">
+                        Tap the gift box above to unwrap a special fortune and birthday compliment!
+                    </p>
+                </div>
+
+                <!-- Balloon Pop Counter Mini-Game -->
+                <div class="interactive-box">
+                    <h3><span>🎈</span> Pop The Floating Balloons!</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                        Click or tap the rising balloons in the sky to pop them!
+                    </p>
+                    <div class="balloon-pop-counter">
+                        <span style="font-weight: 700; font-size: 0.9rem;">Balloons Popped:</span>
+                        <span class="counter-value" id="poppedCount">0</span>
+                    </div>
+                    <div class="balloon-combo-badge" id="balloonComboBadge">🔥 COMBO x2!</div>
+                    <div class="balloon-substats">
+                        <span>Best Streak: <strong id="bestStreak">0</strong></span>
+                        <span class="golden-hint">✨ Golden Balloons = +50 pts!</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- CUSTOMIZE MODAL -->
+    <div class="modal-overlay" id="customizeModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">✨ Personalize This Wish</h2>
+                <button type="button" class="btn-close-modal" id="btnCloseModal" aria-label="Close customization modal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label for="inputName">Birthday Person's Name</label>
+                <input type="text" id="inputName" class="form-input" placeholder="e.g. Sarah, Alex, Mom" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label for="inputAge">Age / Milestone (Optional)</label>
+                <input type="text" id="inputAge" class="form-input" placeholder="e.g. 21, 25, 30th" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label for="inputSender">Sender Name / Group</label>
+                <input type="text" id="inputSender" class="form-input" placeholder="e.g. David & The Gang" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label>Quick Wish Templates (Click to fill):</label>
+                <div class="wish-presets-pills">
+                    <button type="button" class="preset-pill" data-preset="bestie">💖 Best Friend</button>
+                    <button type="button" class="preset-pill" data-preset="sweet">🌸 Sweet & Radiant</button>
+                    <button type="button" class="preset-pill" data-preset="funny">🤣 Funny & Teasing</button>
+                    <button type="button" class="preset-pill" data-preset="milestone">🌟 Big Milestone</button>
+                    <button type="button" class="preset-pill" data-preset="family">👨‍👩‍👧 Family Hug</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="inputMessage">Heartfelt Wish Message</label>
+                <textarea id="inputMessage" class="form-textarea" placeholder="Write your custom birthday wish..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="selectTheme">Celebration Theme</label>
+                <select id="selectTheme" class="form-select">
+                    <option value="galaxy">🌌 Midnight Galaxy (Neon & Gold)</option>
+                    <option value="rosegold">🌸 Rose Gold & Champagne Luxe</option>
+                    <option value="carnival">🎪 Party Carnival & Confetti</option>
+                </select>
+            </div>
+
+            <div class="share-link-box">
+                <input type="text" id="shareLinkInput" class="share-link-input" readonly aria-label="Generated shareable link">
+                <button type="button" class="btn-copy" id="btnCopyLink">📋 Copy Link</button>
+            </div>
+            <p class="share-note">
+                Copy and send this unique URL to your friend so they see their personalized celebration!
+            </p>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast-msg" id="toastMsg">Notification message</div>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>Made with love & celebration magic ✨ • Happy Birthday To You!</p>
+    </footer>
+
+    <!-- HIDDEN CANVAS FOR HIGH-RES KEEPSAKE CARD EXPORT -->
+    <canvas id="cardExportCanvas" width="800" height="960" style="display: none;"></canvas>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script src="audio-synth.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
